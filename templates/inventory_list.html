@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-box-seam"></i> Inventory</h2>
+    </div>
+    <div class="col-auto">
+        <a href="{{ url_for('inventory_new') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Item
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('inventory_list') }}" class="row g-3">
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" name="search" 
+                           placeholder="Search SKU or description..." 
+                           value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select" name="equipment" onchange="this.form.submit()">
+                    <option value="">All Equipment Types</option>
+                    {% for eq_type in equipment_types %}
+                    <option value="{{ eq_type }}" {% if equipment_filter == eq_type %}selected{% endif %}>{{ eq_type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="status" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    {% for status in statuses %}
+                    <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select" name="vendor" onchange="this.form.submit()">
+                    <option value="">All Consignors</option>
+                    {% for vendor in vendors %}
+                    <option value="{{ vendor.id }}" {% if vendor_filter == vendor.id|string %}selected{% endif %}>
+                        #{{ vendor.id }} - {{ vendor.full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Inventory Table -->
+<div class="card">
+    <div class="card-body">
+        {% if inventory_items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>SKU</th>
+                        <th>Consignor</th>
+                        <th>Equipment Type</th>
+                        <th>Description</th>
+                        <th>Price</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in inventory_items %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('inventory_view', item_id=item.id) }}" 
+                               class="text-decoration-none">
+                                <strong>{{ item.sku }}</strong>
+                            </a>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('vendor_view', vendor_id=item.vendor_id) }}" 
+                               class="text-decoration-none">
+                                #{{ item.vendor_id }} - {{ item.vendor.full_name }}
+                            </a>
+                        </td>
+                        <td>{{ item.equipment_type }}</td>
+                        <td>{{ item.description or '-' }}</td>
+                        <td>${{ "%.2f"|format(item.price) }}</td>
+                        <td>
+                            {% if item.status == 'In-Stock' %}
+                            <span class="badge bg-success">{{ item.status }}</span>
+                            {% elif item.status == 'Sold' %}
+                            <span class="badge bg-primary">{{ item.status }}</span>
+                            {% elif item.status == 'Donated' %}
+                            <span class="badge bg-info">{{ item.status }}</span>
+                            {% elif item.status == 'Rejected' %}
+                            <span class="badge bg-danger">{{ item.status }}</span>
+                            {% elif item.status == 'Returned to Vendor' %}
+                            <span class="badge bg-warning text-dark">{{ item.status }}</span>
+                            {% else %}
+                            <span class="badge bg-secondary">{{ item.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('inventory_view', item_id=item.id) }}" 
+                                   class="btn btn-outline-primary" title="View">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('inventory_edit', item_id=item.id) }}" 
+                                   class="btn btn-outline-secondary" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        title="Delete"
+                                        onclick="confirmDelete({{ item.id }}, '{{ item.sku }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="mt-3 text-muted">
+            <small>Showing {{ inventory_items|length }} item(s)</small>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+            <p class="mt-3">No inventory items found.</p>
+            <a href="{{ url_for('inventory_new') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Add Your First Item
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to delete inventory item <strong id="itemSKU"></strong>?
+                <p class="text-muted mt-2"><small>This action cannot be undone.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmDelete(itemId, sku) {
+        document.getElementById('itemSKU').textContent = sku;
+        document.getElementById('deleteForm').action = '/inventory/' + itemId + '/delete';
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

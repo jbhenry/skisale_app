@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Consignor - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person"></i> {{ action }} Consignor</h2>
+            <a href="{{ url_for('vendors_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <!-- Vendor ID (read-only if editing) -->
+                    {% if vendor %}
+                    <div class="mb-3">
+                        <label class="form-label">Vendor ID</label>
+                        <input type="text" class="form-control" value="#{{ vendor.id }}" disabled>
+                        <small class="text-muted">Auto-generated ID (cannot be changed)</small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Consignor Name -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="first_name" class="form-label">
+                                First Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="first_name" 
+                                   name="first_name" required
+                                   value="{{ vendor.first_name if vendor else '' }}"
+                                   placeholder="John">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="last_name" class="form-label">
+                                Last Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="last_name" 
+                                   name="last_name" required
+                                   value="{{ vendor.last_name if vendor else '' }}"
+                                   placeholder="Smith">
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">Contact Information</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="phone" 
+                                   name="phone"
+                                   value="{{ vendor.phone if vendor else '' }}"
+                                   placeholder="(555) 123-4567">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" 
+                                   name="email"
+                                   value="{{ vendor.email if vendor else '' }}"
+                                   placeholder="john.smith@email.com">
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">Address</h5>
+                    
+                    <div class="mb-3">
+                        <label for="address1" class="form-label">Address Line 1</label>
+                        <input type="text" class="form-control" id="address1" 
+                               name="address1"
+                               value="{{ vendor.address1 if vendor else '' }}"
+                               placeholder="123 Main Street">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="address2" class="form-label">Address Line 2</label>
+                        <input type="text" class="form-control" id="address2" 
+                               name="address2"
+                               value="{{ vendor.address2 if vendor else '' }}"
+                               placeholder="Apt 4B">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-5">
+                            <label for="city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="city" 
+                                   name="city"
+                                   value="{{ vendor.city if vendor else '' }}"
+                                   placeholder="Denver">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="state" class="form-label">State</label>
+                            <select class="form-select" id="state" name="state">
+                                <option value="">--</option>
+                                {% set states = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'] %}
+                                {% for st in states %}
+                                <option value="{{ st }}" {% if vendor and vendor.state == st %}selected{% endif %}>{{ st }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="zip_code" class="form-label">ZIP Code</label>
+                            <input type="text" class="form-control" id="zip_code" 
+                                   name="zip_code"
+                                   value="{{ vendor.zip_code if vendor else '' }}"
+                                   placeholder="80202">
+                        </div>
+                    </div>
+
+                    <!-- Consignment Details -->
+                    <h5 class="border-bottom pb-2 mb-3 mt-4">Consignment Details</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="commission_rate" class="form-label">Commission Rate (%)</label>
+                            <input type="number" class="form-control" id="commission_rate" 
+                                   name="commission_rate" min="0" max="100" step="1"
+                                   value="{{ (vendor.commission_rate * 100) | int if vendor else 20 }}"
+                                   placeholder="20">
+                            <small class="text-muted">% we keep from sales</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method">
+                                <option value="">--Select--</option>
+                                <option value="Cash" {% if vendor and vendor.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
+                                <option value="Check" {% if vendor and vendor.payment_method == 'Check' %}selected{% endif %}>Check</option>
+                                <option value="PayPal" {% if vendor and vendor.payment_method == 'PayPal' %}selected{% endif %}>PayPal</option>
+                                <option value="Venmo" {% if vendor and vendor.payment_method == 'Venmo' %}selected{% endif %}>Venmo</option>
+                                <option value="Zelle" {% if vendor and vendor.payment_method == 'Zelle' %}selected{% endif %}>Zelle</option>
+                                <option value="Bank Transfer" {% if vendor and vendor.payment_method == 'Bank Transfer' %}selected{% endif %}>Bank Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" 
+                                  rows="3" placeholder="Additional notes...">{{ vendor.notes if vendor else '' }}</textarea>
+                    </div>
+
+                    <!-- Active Status -->
+                    <div class="form-check mb-4">
+                        <input class="form-check-input" type="checkbox" id="active" 
+                               name="active" {% if not vendor or vendor.active %}checked{% endif %}>
+                        <label class="form-check-label" for="active">
+                            Active Consignor
+                        </label>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('vendors_list') }}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> {{ 'Update' if vendor else 'Create' }} Consignor
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        {% if vendor %}
+        <div class="mt-3 text-muted">
+            <small>
+                Created: {{ vendor.created_at.strftime('%Y-%m-%d %I:%M %p') if vendor.created_at else 'N/A' }}
+                {% if vendor.updated_at %}
+                | Last updated: {{ vendor.updated_at.strftime('%Y-%m-%d %I:%M %p') }}
+                {% endif %}
+            </small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

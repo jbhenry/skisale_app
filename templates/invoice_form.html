@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}New Sale - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-receipt"></i> New Sale</h2>
+            <a href="{{ url_for('invoices_list') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to List
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="customer_name" class="form-label">Customer Name (Optional)</label>
+                        <input type="text" class="form-control" id="customer_name" 
+                               name="customer_name"
+                               placeholder="John Doe">
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="tax_rate" class="form-label">Sales Tax Rate (%)</label>
+                            <input type="number" class="form-control" id="tax_rate" 
+                                   name="tax_rate" step="0.01" min="0" max="100"
+                                   value="{{ default_tax_rate }}"
+                                   placeholder="6.00">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select class="form-select" id="payment_method" name="payment_method">
+                                <option value="">--Select--</option>
+                                {% for method in payment_methods %}
+                                <option value="{{ method }}">{{ method }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" 
+                                  rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-cart-plus"></i> Start Sale & Add Items
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle"></i> After creating the invoice, you'll be able to scan/add items to the sale.
+        </div>
+    </div>
+</div>
+{% endblock %}

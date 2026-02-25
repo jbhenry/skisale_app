@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice #{{ invoice.id }} - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-receipt"></i> Invoice #{{ invoice.id }}</h2>
+            <div>
+                <a href="{{ url_for('invoices_list') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <a href="{{ url_for('invoice_receipt', invoice_id=invoice.id) }}" 
+                   class="btn btn-primary" target="_blank">
+                    <i class="bi bi-printer"></i> Print Receipt
+                </a>
+            </div>
+        </div>
+
+        <!-- Invoice Info -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Invoice Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Invoice #:</strong> {{ invoice.id }}</p>
+                        <p><strong>Date:</strong> {{ invoice.invoice_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        <p><strong>Customer:</strong> {{ invoice.customer_name or 'Walk-in Customer' }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Payment Method:</strong> {{ invoice.payment_method or '—' }}</p>
+                        <p><strong>Tax Rate:</strong> {{ (invoice.tax_rate * 100)|round(1) }}%</p>
+                        {% if invoice.notes %}
+                        <p><strong>Notes:</strong> {{ invoice.notes }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Items -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Items Sold ({{ invoice.lines|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>SKU</th>
+                                <th>Description</th>
+                                <th>Equipment Type</th>
+                                <th>Consignor</th>
+                                <th class="text-end">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for line in invoice.lines %}
+                            <tr>
+                                <td><strong>{{ line.inventory_item.sku }}</strong></td>
+                                <td>{{ line.inventory_item.description or '—' }}</td>
+                                <td>{{ line.inventory_item.equipment_type }}</td>
+                                <td>
+                                    <a href="{{ url_for('vendor_view', vendor_id=line.inventory_item.vendor_id) }}">
+                                        #{{ line.inventory_item.vendor_id }} - {{ line.inventory_item.vendor.full_name }}
+                                    </a>
+                                </td>
+                                <td class="text-end">${{ "%.2f"|format(line.price) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Totals -->
+        <div class="card">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8 text-end">
+                        <p class="mb-2"><strong>Subtotal:</strong></p>
+                        <p class="mb-2"><strong>Sales Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</strong></p>
+                        <p class="mb-0"><h4><strong>Total:</strong></h4></p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <p class="mb-2">${{ "%.2f"|format(invoice.subtotal) }}</p>
+                        <p class="mb-2">${{ "%.2f"|format(invoice.tax_amount) }}</p>
+                        <p class="mb-0"><h4 class="text-success">${{ "%.2f"|format(invoice.total) }}</h4></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

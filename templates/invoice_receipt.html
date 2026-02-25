@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt - Invoice #{{ invoice.id }}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            @page { margin: 0.5in; }
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .receipt-header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        
+        .receipt-info {
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .receipt-info p {
+            margin: 5px 0;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .items-table th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        
+        .items-table td {
+            padding: 8px 0;
+            border-bottom: 1px dotted #ccc;
+        }
+        
+        .items-table .price {
+            text-align: right;
+        }
+        
+        .totals {
+            margin-top: 20px;
+            border-top: 2px solid #000;
+            padding-top: 10px;
+        }
+        
+        .totals .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        
+        .totals .row.total {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 2px solid #000;
+        }
+        
+        .receipt-footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px dashed #000;
+            font-size: 12px;
+        }
+        
+        .print-button {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .btn:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button no-print">
+        <button class="btn" onclick="window.print()">🖨️ Print Receipt</button>
+    </div>
+
+    <div class="receipt-header">
+        <h1>SkiSale</h1>
+        <p>Consignment Ski Sale</p>
+    </div>
+
+    <div class="receipt-info">
+        <p><strong>Invoice #:</strong> {{ invoice.id }}</p>
+        <p><strong>Date:</strong> {{ invoice.invoice_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+        {% if invoice.customer_name %}
+        <p><strong>Customer:</strong> {{ invoice.customer_name }}</p>
+        {% endif %}
+        {% if invoice.payment_method %}
+        <p><strong>Payment:</strong> {{ invoice.payment_method }}</p>
+        {% endif %}
+    </div>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th class="price">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in invoice.lines %}
+            <tr>
+                <td>
+                    <strong>{{ line.inventory_item.sku }}</strong><br>
+                    <small>{{ line.inventory_item.description or line.inventory_item.equipment_type }}</small>
+                </td>
+                <td class="price">${{ "%.2f"|format(line.price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="row">
+            <span>Subtotal:</span>
+            <span>${{ "%.2f"|format(invoice.subtotal) }}</span>
+        </div>
+        <div class="row">
+            <span>Sales Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</span>
+            <span>${{ "%.2f"|format(invoice.tax_amount) }}</span>
+        </div>
+        <div class="row total">
+            <span>TOTAL:</span>
+            <span>${{ "%.2f"|format(invoice.total) }}</span>
+        </div>
+    </div>
+
+    <div class="receipt-footer">
+        <p>Thank you for your purchase!</p>
+        <p>All sales final.</p>
+        {% if invoice.notes %}
+        <p style="margin-top: 15px;"><em>{{ invoice.notes }}</em></p>
+        {% endif %}
+    </div>
+</body>
+</html>

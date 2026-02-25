@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+        <p class="text-muted">Real-time overview of your consignment ski sale</p>
+    </div>
+</div>
+
+<!-- Key Metrics Row -->
+<div class="row mb-4">
+    <!-- Total Sales -->
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Total Sales</h6>
+                        <h2 class="text-success mb-0">${{ "%.2f"|format(total_sales) }}</h2>
+                        <small class="text-muted">{{ num_invoices }} invoice(s)</small>
+                    </div>
+                    <div class="text-success" style="font-size: 3rem; opacity: 0.3;">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Commission -->
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Our Commission</h6>
+                        <h2 class="text-primary mb-0">${{ "%.2f"|format(total_commission) }}</h2>
+                        <small class="text-muted">Our earnings</small>
+                    </div>
+                    <div class="text-primary" style="font-size: 3rem; opacity: 0.3;">
+                        <i class="bi bi-piggy-bank"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Payouts -->
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Vendor Payouts</h6>
+                        <h2 class="text-warning mb-0">${{ "%.2f"|format(total_vendor_payout) }}</h2>
+                        <small class="text-muted">Owed to consignors</small>
+                    </div>
+                    <div class="text-warning" style="font-size: 3rem; opacity: 0.3;">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Tax -->
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Sales Tax Collected</h6>
+                        <h2 class="text-info mb-0">${{ "%.2f"|format(total_tax) }}</h2>
+                        <small class="text-muted">To remit to state</small>
+                    </div>
+                    <div class="text-info" style="font-size: 3rem; opacity: 0.3;">
+                        <i class="bi bi-receipt-cutoff"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Secondary Metrics Row -->
+<div class="row mb-4">
+    <!-- Active Vendors -->
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-people"></i> Consignors</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1 class="display-4 text-primary">{{ active_vendors }}</h1>
+                <p class="text-muted mb-0">Active Consignors</p>
+                <a href="{{ url_for('vendors_list') }}" class="btn btn-sm btn-outline-primary mt-3">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Inventory -->
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-box-seam"></i> Total Inventory</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1 class="display-4 text-primary">{{ total_inventory }}</h1>
+                <p class="text-muted mb-0">Items Consigned</p>
+                <a href="{{ url_for('inventory_list') }}" class="btn btn-sm btn-outline-primary mt-3">
+                    View All <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breakdown Percentages -->
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-pie-chart"></i> Sales Breakdown</h5>
+            </div>
+            <div class="card-body">
+                {% set total_before_tax = total_commission + total_vendor_payout %}
+                {% if total_before_tax > 0 %}
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Our Commission</span>
+                        <strong>{{ "%.1f"|format((total_commission / total_before_tax) * 100) }}%</strong>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-primary" style="width: {{ (total_commission / total_before_tax) * 100 }}%">
+                            ${{ "%.0f"|format(total_commission) }}
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Vendor Payouts</span>
+                        <strong>{{ "%.1f"|format((total_vendor_payout / total_before_tax) * 100) }}%</strong>
+                    </div>
+                    <div class="progress" style="height: 25px;">
+                        <div class="progress-bar bg-warning" style="width: {{ (total_vendor_payout / total_before_tax) * 100 }}%">
+                            ${{ "%.0f"|format(total_vendor_payout) }}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-center text-muted py-4">No sales yet</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Status Breakdown -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Inventory by Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    {% for status, count in inventory_by_status.items() %}
+                    <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                        <div class="p-3 border rounded">
+                            <h3 class="mb-1
+                                {% if status == 'In-Stock' %}text-success
+                                {% elif status == 'Sold' %}text-primary
+                                {% elif status == 'Donated' %}text-info
+                                {% elif status == 'Rejected' %}text-danger
+                                {% elif status == 'Returned to Vendor' %}text-warning
+                                {% else %}text-secondary{% endif %}">
+                                {{ count }}
+                            </h3>
+                            <small class="text-muted">{{ status }}</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if total_inventory > 0 %}
+                <div class="progress mt-3" style="height: 30px;">
+                    {% set in_stock = inventory_by_status['In-Stock'] %}
+                    {% set sold = inventory_by_status['Sold'] %}
+                    
+                    {% if in_stock > 0 %}
+                    <div class="progress-bar bg-success" style="width: {{ (in_stock / total_inventory) * 100 }}%"
+                         title="{{ in_stock }} In-Stock">
+                        {% if (in_stock / total_inventory) * 100 > 10 %}{{ in_stock }} In-Stock{% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if sold > 0 %}
+                    <div class="progress-bar bg-primary" style="width: {{ (sold / total_inventory) * 100 }}%"
+                         title="{{ sold }} Sold">
+                        {% if (sold / total_inventory) * 100 > 10 %}{{ sold }} Sold{% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% for status in ['Donated', 'Rejected', 'Returned to Vendor', 'Not In Stock'] %}
+                    {% set count = inventory_by_status[status] %}
+                    {% if count > 0 %}
+                    <div class="progress-bar bg-secondary" style="width: {{ (count / total_inventory) * 100 }}%"
+                         title="{{ count }} {{ status }}">
+                        {% if (count / total_inventory) * 100 > 5 %}{{ count }}{% endif %}
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('invoice_new') }}" class="btn btn-success">
+                        <i class="bi bi-cart-plus"></i> New Sale
+                    </a>
+                    <a href="{{ url_for('inventory_new') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Inventory
+                    </a>
+                    <a href="{{ url_for('vendor_new') }}" class="btn btn-info">
+                        <i class="bi bi-person-plus"></i> New Consignor
+                    </a>
+                    <a href="{{ url_for('invoices_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-receipt"></i> View Invoices
+                    </a>
+                    <a href="{{ url_for('inventory_list') }}?status=In-Stock" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-seam"></i> Available Inventory
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

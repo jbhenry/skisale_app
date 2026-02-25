@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}{{ vendor.full_name }} - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-person"></i> Consignor Details</h2>
+            <div>
+                <a href="{{ url_for('vendors_list') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <a href="{{ url_for('vendor_edit', vendor_id=vendor.id) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit
+                </a>
+            </div>
+        </div>
+
+        <!-- Consignor Info Card -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ vendor.full_name }}</h4>
+                    {% if vendor.active %}
+                    <span class="badge bg-success">Active</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inactive</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Vendor ID:</strong>
+                    </div>
+                    <div class="col-md-8">
+                        <span class="badge bg-light text-dark fs-6">#{{ vendor.id }}</span>
+                    </div>
+                </div>
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>First Name:</strong></div>
+                    <div class="col-md-8">{{ vendor.first_name }}</div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4"><strong>Last Name:</strong></div>
+                    <div class="col-md-8">{{ vendor.last_name }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Information Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-telephone-fill"></i> Contact Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Phone:</strong></div>
+                    <div class="col-md-8">
+                        {% if vendor.phone %}
+                        <a href="tel:{{ vendor.phone }}">{{ vendor.phone }}</a>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4"><strong>Email:</strong></div>
+                    <div class="col-md-8">
+                        {% if vendor.email %}
+                        <a href="mailto:{{ vendor.email }}">{{ vendor.email }}</a>
+                        {% else %}
+                        —
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Address Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-geo-alt-fill"></i> Address</h5>
+            </div>
+            <div class="card-body">
+                {% if vendor.address1 or vendor.address2 or vendor.city or vendor.state or vendor.zip_code %}
+                <address class="mb-0">
+                    {% if vendor.address1 %}{{ vendor.address1 }}<br>{% endif %}
+                    {% if vendor.address2 %}{{ vendor.address2 }}<br>{% endif %}
+                    {% if vendor.city or vendor.state or vendor.zip_code %}
+                    {{ vendor.city }}{% if vendor.city and (vendor.state or vendor.zip_code) %},{% endif %}
+                    {{ vendor.state }} {{ vendor.zip_code }}
+                    {% endif %}
+                </address>
+                {% else %}
+                <p class="text-muted mb-0">No address on file</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Consignment Details Card -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-cash-stack"></i> Consignment Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-md-4"><strong>Commission Rate:</strong></div>
+                    <div class="col-md-8">
+                        <span class="badge bg-info text-dark">{{ (vendor.commission_rate * 100) | int }}%</span>
+                        <small class="text-muted">
+                            (Consignor receives {{ 100 - ((vendor.commission_rate * 100) | int) }}% of sale)
+                        </small>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4"><strong>Payment Method:</strong></div>
+                    <div class="col-md-8">{{ vendor.payment_method or '—' }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Card -->
+        {% if vendor.notes %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-sticky-fill"></i> Notes</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-0" style="white-space: pre-wrap;">{{ vendor.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Inventory Section -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-box-seam"></i> Inventory</h5>
+                    <a href="{{ url_for('inventory_new') }}?vendor_id={{ vendor.id }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add Item
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if vendor.inventory_items %}
+                <!-- Inventory Summary -->
+                {% set total_items = vendor.inventory_items|length %}
+                {% set sold_items = vendor.inventory_items|selectattr('status', 'equalto', 'Sold')|list %}
+                {% set num_sold = sold_items|length %}
+                {% set total_sales = sold_items|sum(attribute='price') %}
+                {% set commission_amount = total_sales * vendor.commission_rate %}
+                {% set payout_amount = total_sales - commission_amount %}
+                
+                <div class="row text-center mb-4">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-primary mb-0">{{ total_items }}</h3>
+                            <small class="text-muted">Total Items Consigned</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-success mb-0">{{ num_sold }}</h3>
+                            <small class="text-muted">Items Sold</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h3 class="text-info mb-0">${{ "%.2f"|format(total_sales) }}</h3>
+                            <small class="text-muted">Total Sales</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3 bg-light">
+                            <h3 class="text-success mb-0">${{ "%.2f"|format(payout_amount) }}</h3>
+                            <small class="text-muted">Consignor Payout</small>
+                            <br><small class="text-muted">(After {{ (vendor.commission_rate * 100)|int }}% commission)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>SKU</th>
+                                <th>Type</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in vendor.inventory_items %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('inventory_view', item_id=item.id) }}">
+                                        {{ item.sku }}
+                                    </a>
+                                </td>
+                                <td>{{ item.equipment_type }}</td>
+                                <td>{{ item.description or '—' }}</td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                                <td>
+                                    {% if item.status == 'In-Stock' %}
+                                    <span class="badge bg-success">{{ item.status }}</span>
+                                    {% elif item.status == 'Sold' %}
+                                    <span class="badge bg-primary">{{ item.status }}</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ item.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-2 text-muted">
+                    <small>{{ vendor.inventory_items|length }} item(s) consigned</small>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-box-seam" style="font-size: 2rem;"></i>
+                    <p class="mt-2">No items consigned yet.</p>
+                    <a href="{{ url_for('inventory_new') }}?vendor_id={{ vendor.id }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-plus-circle"></i> Add First Item
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Metadata -->
+        <div class="card bg-light">
+            <div class="card-body">
+                <small class="text-muted">
+                    <i class="bi bi-clock-history"></i>
+                    Created: {{ vendor.created_at.strftime('%B %d, %Y at %I:%M %p') if vendor.created_at else 'Unknown' }}
+                    {% if vendor.updated_at and vendor.updated_at != vendor.created_at %}
+                    <br>Last updated: {{ vendor.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
