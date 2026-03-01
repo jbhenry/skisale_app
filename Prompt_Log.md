@@ -268,6 +268,22 @@ Total should be:      $300.00 ✓
 
 ---
 
+### 19. Test Framework Setup
+**Date:** 2026-03-01
+**Prompt:** What would be the best testing framework to use with this app? / Yes set up test scaffolding using Pytest
+
+**Requirements:**
+- Automated test coverage for all major functionality
+- Tests should use an isolated in-memory database (not affect production data)
+- Cover models, vendor routes, inventory routes, invoice business logic
+
+**Changes:**
+- Installed pytest and pytest-flask into the virtualenv
+- Created `tests/` directory with full test scaffolding
+- 58 tests covering models, vendors, inventory, and invoices — all passing
+
+---
+
 ## Notes
 
 - All changes maintain backward compatibility with existing data

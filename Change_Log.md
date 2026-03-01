@@ -339,6 +339,17 @@ Invoice (1) ──→ (Many) InvoiceLine
 
 ## Version History
 
+**v1.3** - Test Scaffolding (2026-03-01)
+- Added pytest + pytest-flask to requirements.txt
+- Created `tests/` directory with 58 passing tests:
+  - `tests/conftest.py` — fixtures: app, client, db, sample_vendor, sample_item, sample_invoice
+  - `tests/test_models.py` — unit tests: Vendor.full_name, defaults, Invoice.calculate_totals()
+  - `tests/test_vendors.py` — route tests: list, search, create, edit, soft-delete, API
+  - `tests/test_inventory.py` — route tests: list/filter, create, edit, delete, API
+  - `tests/test_invoices.py` — business logic: add/remove items, status transitions, complete, delete, dashboard
+- Added `pytest.ini` configuration file
+- Each test runs against a fresh in-memory SQLite database
+
 **v1.0** - Initial Release (2026-02-27)
 - Core vendor, inventory, invoice functionality
 - Dashboard with sales metrics

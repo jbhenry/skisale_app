@@ -171,7 +171,7 @@ def vendor_new():
 @app.route('/vendors/<int:vendor_id>/edit', methods=['GET', 'POST'])
 def vendor_edit(vendor_id):
     """Edit existing vendor"""
-    vendor = Vendor.query.get_or_404(vendor_id)
+    vendor = db.get_or_404(Vendor, vendor_id)
     
     if request.method == 'POST':
         try:
@@ -203,7 +203,7 @@ def vendor_edit(vendor_id):
 @app.route('/vendors/<int:vendor_id>/delete', methods=['POST'])
 def vendor_delete(vendor_id):
     """Delete vendor (soft delete by setting active=False)"""
-    vendor = Vendor.query.get_or_404(vendor_id)
+    vendor = db.get_or_404(Vendor, vendor_id)
     
     try:
         vendor.active = False
@@ -218,7 +218,7 @@ def vendor_delete(vendor_id):
 @app.route('/vendors/<int:vendor_id>')
 def vendor_view(vendor_id):
     """View vendor details"""
-    vendor = Vendor.query.get_or_404(vendor_id)
+    vendor = db.get_or_404(Vendor, vendor_id)
     return render_template('vendor_view.html', vendor=vendor)
 
 # ============================================================================
@@ -309,7 +309,7 @@ def inventory_new():
 @app.route('/inventory/<int:item_id>/edit', methods=['GET', 'POST'])
 def inventory_edit(item_id):
     """Edit existing inventory item"""
-    item = Inventory.query.get_or_404(item_id)
+    item = db.get_or_404(Inventory, item_id)
     
     if request.method == 'POST':
         try:
@@ -341,7 +341,7 @@ def inventory_edit(item_id):
 @app.route('/inventory/<int:item_id>/delete', methods=['POST'])
 def inventory_delete(item_id):
     """Delete inventory item"""
-    item = Inventory.query.get_or_404(item_id)
+    item = db.get_or_404(Inventory, item_id)
     
     try:
         sku = item.sku
@@ -357,7 +357,7 @@ def inventory_delete(item_id):
 @app.route('/inventory/<int:item_id>')
 def inventory_view(item_id):
     """View inventory item details"""
-    item = Inventory.query.get_or_404(item_id)
+    item = db.get_or_404(Inventory, item_id)
     return render_template('inventory_view.html', item=item)
 
 # ============================================================================
@@ -402,7 +402,7 @@ def invoice_new():
 @app.route('/invoices/<int:invoice_id>/edit', methods=['GET', 'POST'])
 def invoice_edit(invoice_id):
     """Edit invoice and add/remove items"""
-    invoice = Invoice.query.get_or_404(invoice_id)
+    invoice = db.get_or_404(Invoice, invoice_id)
     
     if request.method == 'POST':
         action = request.form.get('action')
@@ -438,7 +438,7 @@ def invoice_edit(invoice_id):
         elif action == 'remove_item':
             # Remove item from invoice
             line_id = int(request.form.get('line_id'))
-            line = InvoiceLine.query.get_or_404(line_id)
+            line = db.get_or_404(InvoiceLine, line_id)
             
             # Mark item back as in-stock
             line.inventory_item.status = 'In-Stock'
@@ -491,19 +491,19 @@ def invoice_edit(invoice_id):
 @app.route('/invoices/<int:invoice_id>')
 def invoice_view(invoice_id):
     """View invoice details"""
-    invoice = Invoice.query.get_or_404(invoice_id)
+    invoice = db.get_or_404(Invoice, invoice_id)
     return render_template('invoice_view.html', invoice=invoice)
 
 @app.route('/invoices/<int:invoice_id>/receipt')
 def invoice_receipt(invoice_id):
     """Print receipt for invoice"""
-    invoice = Invoice.query.get_or_404(invoice_id)
+    invoice = db.get_or_404(Invoice, invoice_id)
     return render_template('invoice_receipt.html', invoice=invoice)
 
 @app.route('/invoices/<int:invoice_id>/delete', methods=['POST'])
 def invoice_delete(invoice_id):
     """Delete invoice and return items to stock"""
-    invoice = Invoice.query.get_or_404(invoice_id)
+    invoice = db.get_or_404(Invoice, invoice_id)
     
     try:
         # Return all items to stock
@@ -529,7 +529,7 @@ def api_inventory_list():
 @app.route('/api/inventory/<int:item_id>')
 def api_inventory_get(item_id):
     """API endpoint to get single inventory item"""
-    item = Inventory.query.get_or_404(item_id)
+    item = db.get_or_404(Inventory, item_id)
     return jsonify(item.to_dict())
 
 # API endpoints for AJAX calls
@@ -542,7 +542,7 @@ def api_vendors_list():
 @app.route('/api/vendors/<int:vendor_id>')
 def api_vendor_get(vendor_id):
     """API endpoint to get single vendor"""
-    vendor = Vendor.query.get_or_404(vendor_id)
+    vendor = db.get_or_404(Vendor, vendor_id)
     return jsonify(vendor.to_dict())
 
 if __name__ == '__main__':

@@ -2,7 +2,11 @@
 SkiSale Database Models
 """
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+from datetime import datetime, timezone
+
+
+def utcnow():
+    return datetime.now(timezone.utc)
 
 db = SQLAlchemy()
 
@@ -26,8 +30,8 @@ class Vendor(db.Model):
     
     notes = db.Column(db.Text)
     active = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relationship to inventory
     inventory_items = db.relationship('Inventory', backref='vendor', lazy=True, cascade='all, delete-orphan')
@@ -76,8 +80,8 @@ class Inventory(db.Model):
     status = db.Column(db.String(20), nullable=False, default='In-Stock')
     
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     def __repr__(self):
         return f'<Inventory SKU:{self.sku} - {self.equipment_type}>'
@@ -103,7 +107,7 @@ class Invoice(db.Model):
     __tablename__ = 'invoices'
     
     id = db.Column(db.Integer, primary_key=True)
-    invoice_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    invoice_date = db.Column(db.DateTime, default=utcnow, nullable=False)
     customer_name = db.Column(db.String(100))
     subtotal = db.Column(db.Float, nullable=False, default=0.0)
     tax_rate = db.Column(db.Float, nullable=False, default=0.0)  # e.g., 0.08 for 8%
@@ -111,8 +115,8 @@ class Invoice(db.Model):
     total = db.Column(db.Float, nullable=False, default=0.0)
     payment_method = db.Column(db.String(20))  # Cash, Credit, Check, etc.
     notes = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=utcnow)
+    updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
     # Relationship to invoice lines
     lines = db.relationship('InvoiceLine', backref='invoice', lazy=True, cascade='all, delete-orphan')
