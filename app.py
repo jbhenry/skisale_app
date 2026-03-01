@@ -67,23 +67,25 @@ def index():
     
     # Sales metrics
     all_invoices = Invoice.query.all()
-    total_sales = sum(invoice.total for invoice in all_invoices)
+    total_sales = sum(invoice.total for invoice in all_invoices)  # Grand total with tax
     total_tax = sum(invoice.tax_amount for invoice in all_invoices)
-    total_subtotal = sum(invoice.subtotal for invoice in all_invoices)
+    total_subtotal = sum(invoice.subtotal for invoice in all_invoices)  # Before tax
     
-    # Calculate vendor payouts and commissions
+    # Calculate vendor payouts and commissions from INVOICE LINES (not just sold items)
+    # This ensures we only count items that were actually sold through invoices
     total_vendor_payout = 0
     total_commission = 0
     
-    # Go through all sold items to calculate payouts
-    sold_items = Inventory.query.filter_by(status='Sold').all()
-    for item in sold_items:
-        vendor = item.vendor
-        item_price = item.price
-        commission = item_price * vendor.commission_rate
-        payout = item_price - commission
-        total_commission += commission
-        total_vendor_payout += payout
+    # Go through all invoice lines to calculate payouts
+    for invoice in all_invoices:
+        for line in invoice.lines:
+            item = line.inventory_item
+            vendor = item.vendor
+            item_price = line.price  # Use price from invoice line (price at time of sale)
+            commission = item_price * vendor.commission_rate
+            payout = item_price - commission
+            total_commission += commission
+            total_vendor_payout += payout
     
     return render_template('dashboard.html',
                          active_vendors=active_vendors,

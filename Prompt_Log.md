@@ -201,6 +201,50 @@ This file tracks all user requests and feature additions to the SkiSale Manager 
 
 ---
 
+### 16. Dashboard Financial Math Fix (Attempt 1 - Incomplete)
+**Prompt:** Dashboard showing vendor payouts ($300) higher than total sales ($265) - we'd go broke!
+
+**Initial Fix:**
+- Added financial breakdown section
+- Clarified labels
+
+**Result:** Still broken - now showing 120% payouts!
+
+---
+
+### 17. Dashboard Financial Math Fix (Real Fix)
+**Prompt:** Still broken! Vendor payouts exceed total sales. Financial breakdown showing 120% payouts!
+
+**Root Cause Found:**
+- Dashboard calculated payouts from ALL items with status='Sold'
+- But calculated sales from invoice totals only
+- **Problem:** If items marked "Sold" manually (testing, old data, etc.) they counted in payouts but NOT in sales!
+- This created phantom payouts with no corresponding revenue
+
+**Example of the bug:**
+```
+Invoice #1: Sold item A for $100 → counted in sales
+Manual: Marked item B as "Sold" (not in invoice) → counted in payouts but NOT sales
+Result: $100 sales, $160 payouts (item A + item B) = 160% payout rate!
+```
+
+**Correct Fix:**
+- Calculate payouts from **invoice lines** not inventory status
+- Loop through invoices → loop through lines → calculate commission
+- Use `line.price` (price at time of sale) not `item.price`
+- Now payouts ONLY count items actually sold through invoices
+- Payouts + Commission should ALWAYS equal invoice subtotal
+
+**Math Check:**
+```
+Invoice subtotal:      $300.00
+├─ Vendor payout:     $240.00 (80%)
+└─ Our commission:     $60.00 (20%)
+Total should be:      $300.00 ✓
+```
+
+---
+
 ## Notes
 
 - All changes maintain backward compatibility with existing data

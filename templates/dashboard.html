@@ -18,7 +18,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-muted mb-1">Total Sales</h6>
+                        <h6 class="text-muted mb-1">Total Sales (incl. tax)</h6>
                         <h2 class="text-success mb-0">${{ "%.2f"|format(total_sales) }}</h2>
                         <small class="text-muted">{{ num_invoices }} invoice(s)</small>
                     </div>
@@ -78,6 +78,75 @@
                     </div>
                     <div class="text-info" style="font-size: 3rem; opacity: 0.3;">
                         <i class="bi bi-receipt-cutoff"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Breakdown - Show the Math -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-info">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0"><i class="bi bi-calculator"></i> Financial Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">Money Flow:</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Items Sold (subtotal):</strong></td>
+                                <td class="text-end">${{ "%.2f"|format(total_subtotal) }}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 20px;">└ Vendor Payouts ({{ "%.0f"|format((total_vendor_payout / total_subtotal * 100) if total_subtotal > 0 else 0) }}%):</td>
+                                <td class="text-end text-warning">${{ "%.2f"|format(total_vendor_payout) }}</td>
+                            </tr>
+                            <tr>
+                                <td style="padding-left: 20px;">└ Our Commission ({{ "%.0f"|format((total_commission / total_subtotal * 100) if total_subtotal > 0 else 0) }}%):</td>
+                                <td class="text-end text-primary">${{ "%.2f"|format(total_commission) }}</td>
+                            </tr>
+                            <tr class="border-top">
+                                <td><strong>Sales Tax Collected:</strong></td>
+                                <td class="text-end">${{ "%.2f"|format(total_tax) }}</td>
+                            </tr>
+                            <tr class="border-top">
+                                <td><strong>Total Revenue:</strong></td>
+                                <td class="text-end"><strong>${{ "%.2f"|format(total_sales) }}</strong></td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3">What We Keep:</h6>
+                        <div class="alert alert-success mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Our Commission:</span>
+                                <strong>${{ "%.2f"|format(total_commission) }}</strong>
+                            </div>
+                        </div>
+                        <h6 class="text-muted mb-3 mt-4">What We Owe:</h6>
+                        <div class="alert alert-warning mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Vendor Payouts:</span>
+                                <strong>${{ "%.2f"|format(total_vendor_payout) }}</strong>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span>Sales Tax (to state):</span>
+                                <strong>${{ "%.2f"|format(total_tax) }}</strong>
+                            </div>
+                        </div>
+                        <div class="alert alert-light border mt-3">
+                            <div class="d-flex justify-content-between">
+                                <span><strong>Net Cash on Hand:</strong></span>
+                                <strong class="text-success">${{ "%.2f"|format(total_sales) }}</strong>
+                            </div>
+                            <small class="text-muted">Total collected from customers</small>
+                        </div>
                     </div>
                 </div>
             </div>

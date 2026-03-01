@@ -354,6 +354,115 @@ Invoice (1) ──→ (Many) InvoiceLine
 - Clear error messages for unavailable items
 - Prevents double-selling items
 
+**v1.1.2** - Dashboard Financial Calculation Fix (CORRECT) (2026-03-01)
+- **CRITICAL BUG FIX:** Payouts calculated from wrong source
+- Changed from counting all "Sold" items to counting invoice lines only
+- Prevents counting manually-marked-sold items that aren't in invoices
+- Payouts + Commission now correctly equals invoice subtotal
+- Uses line.price (actual sale price) not item.price
+- Math now verifiably correct: subtotal = payouts + commission
+
+---
+
+## Recent Changes (v1.1.2)
+
+### Dashboard Calculation Bug - THE REAL FIX
+
+**The Bug That Wouldn't Die:**
+Version 1.1.1 still showed vendor payouts exceeding sales (120%+ payouts!)
+
+**The REAL Problem:**
+```python
+# OLD (WRONG):
+sold_items = Inventory.query.filter_by(status='Sold').all()
+for item in sold_items:
+    calculate_payout(item)
+```
+
+This counted:
+- ✅ Items sold through invoices
+- ❌ Items manually marked "Sold" (testing, old data, mistakes)
+- ❌ Items marked Sold but never invoiced
+
+**Why This Breaks:**
+1. Testing: You mark item as "Sold" to test
+2. Item not in any invoice (no revenue collected)
+3. Dashboard counts it in payouts anyway
+4. Result: Payouts with no corresponding sales = bankruptcy!
+
+**The Fix:**
+```python
+# NEW (CORRECT):
+for invoice in all_invoices:
+    for line in invoice.lines:
+        calculate_payout(line)
+```
+
+Only counts items that:
+- ✅ Are in an actual invoice
+- ✅ Have actual revenue collected
+- ✅ Have a real sale transaction
+
+**Verification:**
+```
+Invoice Subtotal = Vendor Payouts + Our Commission
+
+Example:
+$300 subtotal = $240 payouts (80%) + $60 commission (20%) ✓
+
+This must ALWAYS be true!
+```
+
+**Files Modified:**
+- `app.py` - index() route, lines 74-86
+- Changed loop from `Inventory.query.filter_by(status='Sold')` 
+- To: `for invoice in all_invoices: for line in invoice.lines:`
+
+---
+
+## Recent Changes (v1.1.1 - INCOMPLETE FIX)
+
+### Dashboard Financial Display Fix
+
+**Problem:**
+- Dashboard showed Total Sales ($265) less than Vendor Payouts ($300)
+- Confusing because it looked like we were losing money
+- Issue: comparing apples (with tax) to oranges (without tax)
+
+**Root Cause:**
+- "Total Sales" = invoice totals including tax
+- "Vendor Payouts" = calculated from item prices (before tax)
+- Made it appear payouts exceeded revenue
+
+**Solution:**
+Added comprehensive Financial Breakdown section:
+
+```
+Items Sold (subtotal): $300.00
+  └ Vendor Payouts (80%): $240.00
+  └ Our Commission (20%): $60.00
+Sales Tax Collected: $18.00
+─────────────────────────────────
+Total Revenue: $318.00
+
+What We Keep: $60.00 (our commission)
+What We Owe: 
+  - Vendors: $240.00
+  - State (tax): $18.00
+Net Cash on Hand: $318.00
+```
+
+**Benefits:**
+1. Shows complete money flow
+2. Percentages make commission rates clear
+3. Separates what we keep from what we owe
+4. Verifiable math (all numbers add up)
+5. Easy to spot if calculations are wrong
+
+**Files Modified:**
+- `templates/dashboard.html` - Added Financial Breakdown card
+- Card title updated: "Total Sales" → "Total Sales (incl. tax)"
+
 ---
 
 ## Recent Changes (v1.1)
