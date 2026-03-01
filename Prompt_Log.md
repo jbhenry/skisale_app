@@ -178,6 +178,29 @@ This file tracks all user requests and feature additions to the SkiSale Manager 
 
 ---
 
+### 15. Pending Status for Invoice Processing
+**Prompt:** Add 'Pending' inventory status. When item added to invoice, mark as Pending. When sale completed, mark as Sold. Only allow In-Stock items to be added to invoices with error message for other statuses.
+
+**Requirements:**
+- New status: "Pending"
+- Add item to invoice → status becomes "Pending" (not Sold yet)
+- Complete sale → all Pending items become "Sold"
+- Prevent adding non-In-Stock items (especially already Sold items)
+- Clear error messages when trying to add unavailable items
+
+**Workflow:**
+1. Item starts as "In-Stock"
+2. Scan item → added to invoice → status = "Pending"
+3. Can still remove item from invoice (returns to "In-Stock")
+4. Click "Complete Sale" → all items in invoice become "Sold"
+
+**Prevents:**
+- Double-selling same item
+- Adding sold/donated/rejected items to new sales
+- Confusion about which items are actually sold vs just in cart
+
+---
+
 ## Notes
 
 - All changes maintain backward compatibility with existing data

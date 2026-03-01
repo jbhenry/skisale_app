@@ -29,6 +29,7 @@ EQUIPMENT_TYPES = [
 
 INVENTORY_STATUSES = [
     'In-Stock',
+    'Pending',
     'Not In Stock',
     'Donated',
     'Sold',
@@ -407,10 +408,13 @@ def invoice_edit(invoice_id):
         if action == 'add_item':
             # Add item by SKU
             sku = request.form.get('sku', '').strip()
-            item = Inventory.query.filter_by(sku=sku, status='In-Stock').first()
+            item = Inventory.query.filter_by(sku=sku).first()
             
             if not item:
-                flash(f'Item with SKU {sku} not found or not available.', 'error')
+                flash(f'Item with SKU {sku} not found.', 'error')
+            elif item.status != 'In-Stock':
+                # Item exists but not available
+                flash(f'Item {sku} cannot be added - status is "{item.status}". Only In-Stock items can be sold.', 'error')
             else:
                 # Add to invoice
                 line = InvoiceLine(
@@ -420,8 +424,8 @@ def invoice_edit(invoice_id):
                 )
                 db.session.add(line)
                 
-                # Mark item as sold
-                item.status = 'Sold'
+                # Mark item as pending (not sold yet until invoice completed)
+                item.status = 'Pending'
                 
                 # Recalculate totals
                 invoice.calculate_totals()
@@ -461,6 +465,11 @@ def invoice_edit(invoice_id):
             invoice.payment_method = request.form.get('payment_method', '').strip()
             invoice.notes = request.form.get('notes', '').strip()
             invoice.calculate_totals()
+            
+            # Mark all items in this invoice as Sold
+            for line in invoice.lines:
+                line.inventory_item.status = 'Sold'
+            
             db.session.commit()
             
             flash(f'Invoice #{invoice.id} completed!', 'success')

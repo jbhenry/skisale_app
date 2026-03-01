@@ -345,3 +345,69 @@ Invoice (1) ──→ (Many) InvoiceLine
 - Printable receipts
 - Full CRUD operations
 - Sample data included
+
+**v1.1** - Pending Status for Invoice Safety (2026-03-01)
+- Added "Pending" inventory status
+- Items marked Pending when added to invoice (not Sold immediately)
+- Items marked Sold only when invoice completed
+- Validation: Only In-Stock items can be added to invoices
+- Clear error messages for unavailable items
+- Prevents double-selling items
+
+---
+
+## Recent Changes (v1.1)
+
+### Inventory Status Updates
+
+**New Status Added:**
+- "Pending" - Item added to invoice but sale not completed
+
+**Updated Status Flow:**
+```
+In-Stock → (add to invoice) → Pending → (complete sale) → Sold
+                                ↓
+                         (remove from invoice)
+                                ↓
+                            In-Stock
+```
+
+**Validation Added:**
+- Only items with status "In-Stock" can be added to invoices
+- Attempting to add item with other status shows error:
+  - "Item {sku} cannot be added - status is '{status}'. Only In-Stock items can be sold."
+- Prevents re-selling already sold items
+- Prevents selling donated/rejected/returned items
+
+### Code Changes
+
+**app.py - Line 30-37:**
+- Added 'Pending' to INVENTORY_STATUSES list (after In-Stock)
+
+**app.py - invoice_edit route (lines 408-431):**
+- Changed item lookup to check all items, not just In-Stock
+- Added explicit status validation with error message
+- Changed `item.status = 'Sold'` to `item.status = 'Pending'`
+- Items now marked Pending when added to cart
+
+**app.py - complete action (lines 461-475):**
+- Added loop to mark all invoice items as Sold
+- `for line in invoice.lines: line.inventory_item.status = 'Sold'`
+- Only marks Sold when invoice finalized
+
+**Templates Updated:**
+- `inventory_list.html` - Added Pending badge styling (bg-warning)
+- `dashboard.html` - Added Pending to status counts and progress bar
+- Pending displayed in orange/warning color
+
+### Benefits
+
+1. **Prevents Double-Selling:** Item becomes unavailable as soon as added to cart
+2. **Allows Changes:** Items can be removed from invoice before completion
+3. **Clear Status:** Easy to see which items are in-progress vs actually sold
+4. **Safety:** Cannot add already-sold items to new invoices
+5. **Audit Trail:** Status history shows when item moved through states
+
+---
+
+## Version History

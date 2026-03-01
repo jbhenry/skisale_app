@@ -172,6 +172,7 @@
                         <div class="p-3 border rounded">
                             <h3 class="mb-1
                                 {% if status == 'In-Stock' %}text-success
+                                {% elif status == 'Pending' %}text-warning
                                 {% elif status == 'Sold' %}text-primary
                                 {% elif status == 'Donated' %}text-info
                                 {% elif status == 'Rejected' %}text-danger
@@ -188,7 +189,22 @@
                 {% if total_inventory > 0 %}
                 <div class="progress mt-3" style="height: 30px;">
                     {% set in_stock = inventory_by_status['In-Stock'] %}
+                    {% set pending = inventory_by_status['Pending'] %}
                     {% set sold = inventory_by_status['Sold'] %}
+                    
+                    {% if in_stock > 0 %}
+                    <div class="progress-bar bg-success" style="width: {{ (in_stock / total_inventory) * 100 }}%"
+                         title="{{ in_stock }} In-Stock">
+                        {% if (in_stock / total_inventory) * 100 > 10 %}{{ in_stock }} In-Stock{% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if pending > 0 %}
+                    <div class="progress-bar bg-warning" style="width: {{ (pending / total_inventory) * 100 }}%"
+                         title="{{ pending }} Pending">
+                        {% if (pending / total_inventory) * 100 > 10 %}{{ pending }} Pending{% endif %}
+                    </div>
+                    {% endif %}
                     
                     {% if in_stock > 0 %}
                     <div class="progress-bar bg-success" style="width: {{ (in_stock / total_inventory) * 100 }}%"

@@ -99,6 +99,8 @@
                         <td>
                             {% if item.status == 'In-Stock' %}
                             <span class="badge bg-success">{{ item.status }}</span>
+                            {% elif item.status == 'Pending' %}
+                            <span class="badge bg-warning">{{ item.status }}</span>
                             {% elif item.status == 'Sold' %}
                             <span class="badge bg-primary">{{ item.status }}</span>
                             {% elif item.status == 'Donated' %}
