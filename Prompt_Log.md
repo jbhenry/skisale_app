@@ -245,6 +245,29 @@ Total should be:      $300.00 ✓
 
 ---
 
+### 18. UI Cleanup and Defaults
+**Prompt:** A couple of small things to clean up:
+- When adding new Vendor, make commission % dropdown with 23% default, other options 15% and 100%. Default payment method Check.
+- On inventory list, provide total under Price column
+- On invoice list, provide totals under Subtotal, Tax, and Total columns
+
+**Changes Made:**
+1. **Vendor Form:**
+   - Commission rate changed from text input to dropdown
+   - Options: 15%, 23% (default), 100%
+   - Payment method defaults to "Check" for new vendors
+
+2. **Inventory List:**
+   - Added footer row with total of all prices
+   - Shows sum of all inventory item prices
+
+3. **Invoice List:**
+   - Added footer row with totals
+   - Shows: Total Subtotal, Total Tax, Total Amount
+   - Quick view of all sales without opening dashboard
+
+---
+
 ## Notes
 
 - All changes maintain backward compatibility with existing data

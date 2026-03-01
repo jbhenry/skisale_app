@@ -118,10 +118,11 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="commission_rate" class="form-label">Commission Rate (%)</label>
-                            <input type="number" class="form-control" id="commission_rate" 
-                                   name="commission_rate" min="0" max="100" step="1"
-                                   value="{{ (vendor.commission_rate * 100) | int if vendor else 20 }}"
-                                   placeholder="20">
+                            <select class="form-select" id="commission_rate" name="commission_rate">
+                                <option value="15" {% if vendor and (vendor.commission_rate * 100)|int == 15 %}selected{% endif %}>15%</option>
+                                <option value="23" {% if (vendor and (vendor.commission_rate * 100)|int == 23) or not vendor %}selected{% endif %}>23%</option>
+                                <option value="100" {% if vendor and (vendor.commission_rate * 100)|int == 100 %}selected{% endif %}>100%</option>
+                            </select>
                             <small class="text-muted">% we keep from sales</small>
                         </div>
                         <div class="col-md-6">
@@ -129,7 +130,7 @@
                             <select class="form-select" id="payment_method" name="payment_method">
                                 <option value="">--Select--</option>
                                 <option value="Cash" {% if vendor and vendor.payment_method == 'Cash' %}selected{% endif %}>Cash</option>
-                                <option value="Check" {% if vendor and vendor.payment_method == 'Check' %}selected{% endif %}>Check</option>
+                                <option value="Check" {% if (vendor and vendor.payment_method == 'Check') or not vendor %}selected{% endif %}>Check</option>
                                 <option value="PayPal" {% if vendor and vendor.payment_method == 'PayPal' %}selected{% endif %}>PayPal</option>
                                 <option value="Venmo" {% if vendor and vendor.payment_method == 'Venmo' %}selected{% endif %}>Venmo</option>
                                 <option value="Zelle" {% if vendor and vendor.payment_method == 'Zelle' %}selected{% endif %}>Zelle</option>

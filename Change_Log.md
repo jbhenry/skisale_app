@@ -362,6 +362,46 @@ Invoice (1) ──→ (Many) InvoiceLine
 - Uses line.price (actual sale price) not item.price
 - Math now verifiably correct: subtotal = payouts + commission
 
+**v1.2** - UI Cleanup and Better Defaults (2026-03-01)
+- Commission rate dropdown (15%, 23% default, 100%) instead of text input
+- Payment method defaults to "Check" for new vendors
+- Inventory list shows total of all item prices
+- Invoice list shows totals for Subtotal, Tax, and Total columns
+- Better user experience with sensible defaults
+
+---
+
+## Recent Changes (v1.2)
+
+### UI Improvements
+
+**Vendor Form Updates:**
+- Commission rate now dropdown (was text input)
+  - Options: 15%, 23%, 100%
+  - Default: 23%
+- Payment method defaults to "Check" (was blank)
+- Prevents data entry errors
+- Faster vendor creation with common values pre-selected
+
+**List View Totals:**
+1. **Inventory List:**
+   - Footer row with price total
+   - Shows total value of all displayed inventory
+   - Useful for insurance/accounting
+
+2. **Invoice List:**
+   - Footer row with three totals:
+     - Total Subtotal (pre-tax sales)
+     - Total Tax (tax collected)
+     - Total Amount (grand total)
+   - Quick view of all sales without opening dashboard
+   - Matches dashboard "Total Sales" number
+
+**Files Modified:**
+- `templates/vendor_form.html` - Commission dropdown, payment default
+- `templates/inventory_list.html` - Added tfoot with price total
+- `templates/invoices_list.html` - Added tfoot with subtotal/tax/total
+
 ---
 
 ## Recent Changes (v1.1.2)

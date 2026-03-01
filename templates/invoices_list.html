@@ -69,6 +69,15 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot class="table-light">
+                    <tr>
+                        <td colspan="4" class="text-end"><strong>Totals:</strong></td>
+                        <td><strong>${{ "%.2f"|format(invoices|sum(attribute='subtotal')) }}</strong></td>
+                        <td><strong>${{ "%.2f"|format(invoices|sum(attribute='tax_amount')) }}</strong></td>
+                        <td><strong>${{ "%.2f"|format(invoices|sum(attribute='total')) }}</strong></td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
         
