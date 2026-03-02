@@ -372,6 +372,50 @@ def vendor_checkin(vendor_id):
                            pending_items=pending_items,
                            checked_in_item=checked_in_item)
 
+
+@app.route('/vendors/<int:vendor_id>/checkout', methods=['GET', 'POST'])
+def vendor_checkout(vendor_id):
+    """Scan SKUs to mark items as Returned to Vendor for a vendor."""
+    vendor = db.get_or_404(Vendor, vendor_id)
+
+    # Items currently In-Stock for this vendor (eligible for return)
+    in_stock_items = (Inventory.query
+                      .filter_by(vendor_id=vendor.id, status='In-Stock')
+                      .order_by(Inventory.sku)
+                      .all())
+
+    checked_out_item = None
+
+    if request.method == 'POST':
+        sku = request.form.get('sku', '').strip()
+
+        if not sku:
+            flash('Please enter or scan a SKU.', 'error')
+        else:
+            item = Inventory.query.filter_by(sku=sku).first()
+
+            if not item:
+                flash(f'SKU {sku} not found.', 'error')
+            elif item.vendor_id != vendor.id:
+                flash(f'SKU {sku} belongs to a different consignor — not checked out.', 'error')
+            elif item.status == 'Returned to Vendor':
+                flash(f'SKU {sku} ({item.description or item.equipment_type}) has already been returned.', 'warning')
+            elif item.status != 'In-Stock':
+                flash(f'SKU {sku} has status "{item.status}" and cannot be returned.', 'error')
+            else:
+                item.status = 'Returned to Vendor'
+                db.session.commit()
+                checked_out_item = item
+                # Refresh list after change
+                in_stock_items = (Inventory.query
+                                  .filter_by(vendor_id=vendor.id, status='In-Stock')
+                                  .order_by(Inventory.sku)
+                                  .all())
+
+    return render_template('vendor_checkout.html', vendor=vendor,
+                           in_stock_items=in_stock_items,
+                           checked_out_item=checked_out_item)
+
 # ============================================================================
 # INVENTORY ROUTES
 # ============================================================================
