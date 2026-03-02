@@ -235,6 +235,39 @@ def vendor_view(vendor_id):
     vendor = db.get_or_404(Vendor, vendor_id)
     return render_template('vendor_view.html', vendor=vendor)
 
+@app.route('/vendors/<int:vendor_id>/receipt')
+def vendor_receipt(vendor_id):
+    """Print a check-in receipt listing all inventory for a vendor."""
+    from datetime import datetime, timezone
+    vendor = db.get_or_404(Vendor, vendor_id)
+    checkedin_items = (Inventory.query
+                       .filter_by(vendor_id=vendor.id)
+                       .order_by(Inventory.sku)
+                       .all())
+    return render_template('vendor_receipt.html', vendor=vendor,
+                           checkedin_items=checkedin_items,
+                           now=datetime.now(timezone.utc))
+
+@app.route('/vendors/<int:vendor_id>/checkout-receipt')
+def vendor_checkout_receipt(vendor_id):
+    """Print a checkout/payout receipt for a vendor."""
+    from datetime import datetime, timezone
+    vendor = db.get_or_404(Vendor, vendor_id)
+    items = (Inventory.query
+             .filter_by(vendor_id=vendor.id)
+             .order_by(Inventory.sku)
+             .all())
+    sold_items = [i for i in items if i.status == 'Sold']
+    total_sales = sum(i.price for i in sold_items)
+    commission_amt = total_sales * vendor.commission_rate
+    payout_amt = total_sales - commission_amt
+    return render_template('vendor_checkout_receipt.html', vendor=vendor,
+                           items=items, sold_items=sold_items,
+                           total_sales=total_sales,
+                           commission_amt=commission_amt,
+                           payout_amt=payout_amt,
+                           now=datetime.now(timezone.utc))
+
 @app.route('/vendors/<int:vendor_id>/import', methods=['GET', 'POST'])
 def vendor_import_csv(vendor_id):
     """Import inventory items from a CSV file for a vendor."""

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consignor Payout Receipt - {{ vendor.full_name }}</title>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            @page { margin: 0.75in; size: letter; }
+            body { font-size: 11pt; }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 24px;
+            color: #111;
+        }
+
+        /* ---- Toolbar (screen only) ---- */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary { background: #0d6efd; color: #fff; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+
+        /* ---- Header ---- */
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #000;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .org-name {
+            font-size: 26px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+        }
+        .org-sub { font-size: 13px; color: #555; }
+        .receipt-title { text-align: right; }
+        .receipt-title h2 { margin: 0 0 4px 0; font-size: 20px; }
+        .receipt-title .date { font-size: 13px; color: #555; }
+
+        /* ---- Vendor info ---- */
+        .vendor-section {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 20px;
+            padding: 14px 16px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+        .vendor-block h3 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+        }
+        .vendor-block p { margin: 3px 0; font-size: 14px; }
+        .vendor-name { font-size: 18px; font-weight: bold; margin-bottom: 4px !important; }
+
+        /* ---- Payout summary box ---- */
+        .payout-box {
+            border: 2px solid #198754;
+            border-radius: 6px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+            background: #d4edda;
+        }
+        .payout-box h3 {
+            margin: 0 0 12px 0;
+            font-size: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #155724;
+        }
+        .payout-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 6px 0;
+            font-size: 14px;
+        }
+        .payout-row.total {
+            border-top: 2px solid #155724;
+            margin-top: 10px;
+            padding-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #155724;
+        }
+
+        /* ---- Items table ---- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        thead th {
+            background: #212529;
+            color: #fff;
+            padding: 7px 10px;
+            text-align: left;
+        }
+        thead th.right { text-align: right; }
+        tbody tr:nth-child(even) { background: #f8f9fa; }
+        tbody td {
+            padding: 6px 10px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+        tbody td.right { text-align: right; }
+        .sku { font-family: 'Courier New', monospace; }
+
+        /* Status styling */
+        .status-sold     { color: #0d6efd; font-weight: bold; }
+        .status-returned { color: #6c757d; }
+        .status-instock  { color: #198754; }
+        .status-other    { color: #999; }
+
+        /* ---- Footer ---- */
+        .receipt-footer {
+            margin-top: 32px;
+            border-top: 1px dashed #aaa;
+            padding-top: 16px;
+            font-size: 12px;
+            color: #555;
+        }
+        .signature-line {
+            margin-top: 40px;
+            display: flex;
+            gap: 60px;
+        }
+        .sig-block { flex: 1; }
+        .sig-line {
+            border-bottom: 1px solid #000;
+            height: 32px;
+            margin-bottom: 4px;
+        }
+        .sig-label { font-size: 11px; color: #555; }
+
+        /* ---- Empty state ---- */
+        .empty {
+            text-align: center;
+            padding: 30px;
+            color: #777;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Screen-only toolbar -->
+    <div class="toolbar no-print">
+        <button class="btn btn-primary" onclick="window.print()">&#128438; Print Receipt</button>
+        <a class="btn btn-secondary" href="{{ url_for('vendor_view', vendor_id=vendor.id) }}">&larr; Back to {{ vendor.full_name }}</a>
+    </div>
+
+    <!-- Header -->
+    <div class="receipt-header">
+        <div>
+            <p class="org-name">SkiSale</p>
+            <p class="org-sub">Consignment Ski Sale</p>
+        </div>
+        <div class="receipt-title">
+            <h2>Consignor Payout Receipt</h2>
+            <p class="date">Date: {{ now.strftime('%B %d, %Y') }}</p>
+            <p class="date">Consignor ID: #{{ vendor.id }}</p>
+        </div>
+    </div>
+
+    <!-- Vendor Info -->
+    <div class="vendor-section">
+        <div class="vendor-block" style="flex: 2;">
+            <h3>Consignor</h3>
+            <p class="vendor-name">{{ vendor.full_name }}</p>
+            {% if vendor.phone %}<p>Phone: {{ vendor.phone }}</p>{% endif %}
+            {% if vendor.email %}<p>Email: {{ vendor.email }}</p>{% endif %}
+            {% if vendor.address1 %}
+            <p>{{ vendor.address1 }}{% if vendor.address2 %}, {{ vendor.address2 }}{% endif %}</p>
+            {% if vendor.city or vendor.state or vendor.zip_code %}
+            <p>{{ vendor.city }}{% if vendor.city and vendor.state %}, {% endif %}{{ vendor.state }} {{ vendor.zip_code }}</p>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="vendor-block" style="flex: 1;">
+            <h3>Consignment Terms</h3>
+            <p>Commission: {{ (vendor.commission_rate * 100)|int }}%</p>
+            <p>Consignor receives: {{ 100 - (vendor.commission_rate * 100)|int }}%</p>
+            {% if vendor.payment_method %}<p>Payment: {{ vendor.payment_method }}</p>{% endif %}
+        </div>
+    </div>
+
+    <!-- Payout Summary -->
+    <div class="payout-box">
+        <h3>Payout Summary</h3>
+        <div class="payout-row">
+            <span>Items Sold:</span>
+            <span>{{ sold_items|length }}</span>
+        </div>
+        <div class="payout-row">
+            <span>Total Sales:</span>
+            <span>${{ "%.2f"|format(total_sales) }}</span>
+        </div>
+        <div class="payout-row">
+            <span>Commission ({{ (vendor.commission_rate * 100)|int }}%):</span>
+            <span>&minus; ${{ "%.2f"|format(commission_amt) }}</span>
+        </div>
+        <div class="payout-row total">
+            <span>CONSIGNOR PAYOUT:</span>
+            <span>${{ "%.2f"|format(payout_amt) }}</span>
+        </div>
+    </div>
+
+    <!-- Item Detail Table -->
+    {% if items %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width:90px;">SKU</th>
+                <th>Description</th>
+                <th style="width:100px;">Type</th>
+                <th class="right" style="width:75px;">Price</th>
+                <th style="width:120px;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td class="sku">{{ item.sku }}</td>
+                <td>{{ item.description or '—' }}</td>
+                <td>{{ item.equipment_type }}</td>
+                <td class="right">
+                    {% if item.status == 'Sold' %}
+                    ${{ "%.2f"|format(item.price) }}
+                    {% else %}
+                    <span style="color:#aaa;">${{ "%.2f"|format(item.price) }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.status == 'Sold' %}
+                    <span class="status-sold">Sold</span>
+                    {% elif item.status == 'Returned to Vendor' %}
+                    <span class="status-returned">Returned</span>
+                    {% elif item.status == 'In-Stock' %}
+                    <span class="status-instock">In-Stock</span>
+                    {% else %}
+                    <span class="status-other">{{ item.status }}</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty">No inventory on file for this consignor.</div>
+    {% endif %}
+
+    <!-- Signature lines -->
+    <div class="signature-line">
+        <div class="sig-block">
+            <div class="sig-line"></div>
+            <div class="sig-label">Consignor Signature</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-line"></div>
+            <div class="sig-label">Staff Signature</div>
+        </div>
+        <div class="sig-block">
+            <div class="sig-line"></div>
+            <div class="sig-label">Date</div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="receipt-footer">
+        <p>Payout is calculated from sold items only. Items still In-Stock or Returned are not included.</p>
+        <p>SkiSale &mdash; Consignment Ski Sale</p>
+    </div>
+
+</body>
+</html>

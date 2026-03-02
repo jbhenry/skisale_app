@@ -69,6 +69,11 @@
                             <i class="bi bi-check-circle"></i> All items returned!
                         </div>
                         {% endif %}
+                        <div class="mt-3">
+                            <a href="{{ url_for('vendor_checkout_receipt', vendor_id=vendor.id) }}" class="btn btn-sm btn-outline-success w-100" target="_blank">
+                                <i class="bi bi-printer"></i> Print Payout Receipt
+                            </a>
+                        </div>
                     </div>
                 </div>
 
