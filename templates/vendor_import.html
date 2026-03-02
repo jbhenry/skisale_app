@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Import Inventory - {{ vendor.full_name }} - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-file-earmark-spreadsheet"></i> Import Inventory from CSV</h2>
+            <a href="{{ url_for('vendor_view', vendor_id=vendor.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to {{ vendor.full_name }}
+            </a>
+        </div>
+
+        <!-- Upload Form -->
+        {% if imported is not defined %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Upload CSV for <strong>{{ vendor.full_name }}</strong></h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">
+                    The CSV file should have a header row with columns for SKU, Description, Price,
+                    and Equipment Type. Column names are flexible — common variations are recognised automatically.
+                </p>
+
+                <div class="alert alert-info mb-3">
+                    <strong>Expected columns:</strong>
+                    <ul class="mb-0 mt-1">
+                        <li><strong>SKU</strong> — 7-digit barcode / item number</li>
+                        <li><strong>Description</strong> — item description</li>
+                        <li><strong>Price</strong> — selling price (e.g. 49.99 or $49.99)</li>
+                        <li><strong>Equipment Type</strong> — Skis, Snowboards, Boots, Poles, Bindings, Helmets, Goggles, Apparel, Accessories, or Other</li>
+                    </ul>
+                    <small class="text-muted mt-1 d-block">All imported items will be assigned to <strong>{{ vendor.full_name }}</strong> with status <strong>Not In Stock</strong>. Items with duplicate SKUs are skipped.</small>
+                </div>
+
+                <form method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="csv_file" class="form-label fw-bold">Select CSV File</label>
+                        <input class="form-control" type="file" id="csv_file" name="csv_file"
+                               accept=".csv" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upload"></i> Import
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sample CSV -->
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">Sample CSV format</h6>
+                <pre class="mb-0" style="font-size: 0.85rem;">SKU,Description,Price,Equipment Type
+1234567,Fischer RC4 Worldcup RC 170cm,149.99,Skis
+2345678,Salomon X-Pro 120 Boots Size 27,89.00,Boots
+3456789,Black Diamond Expedition poles,34.50,Poles</pre>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- Results -->
+        {% if imported %}
+        <div class="card border-success mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-check-circle"></i>
+                    {{ imported|length }} item{{ 's' if imported|length != 1 }} imported successfully
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>SKU</th>
+                                <th>Description</th>
+                                <th>Type</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in imported %}
+                            <tr>
+                                <td><code>{{ item.sku }}</code></td>
+                                <td>{{ item.description }}</td>
+                                <td>{{ item.type }}</td>
+                                <td>${{ "%.2f"|format(item.price) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if skipped %}
+        <div class="card border-warning mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    {{ skipped|length }} row{{ 's' if skipped|length != 1 }} skipped
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Row</th>
+                                <th>SKU</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in skipped %}
+                            <tr>
+                                <td>{{ row.row }}</td>
+                                <td><code>{{ row.sku }}</code></td>
+                                <td class="text-warning-emphasis">{{ row.reason }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if not imported and not skipped %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle"></i>
+            No rows were found in the CSV file.
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('vendor_view', vendor_id=vendor.id) }}" class="btn btn-primary">
+                <i class="bi bi-person"></i> Back to {{ vendor.full_name }}
+            </a>
+            <a href="{{ url_for('vendor_import_csv', vendor_id=vendor.id) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-upload"></i> Import Another File
+            </a>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+{% endblock %}

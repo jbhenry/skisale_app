@@ -56,9 +56,24 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
-                        <th>First Name</th>
-                        <th>Last Name</th>
+                        <th>
+                            <a href="{{ url_for('vendors_list', search=search, active_only='true' if active_only else 'false', sort='id', direction='asc' if sort != 'id' or direction == 'desc' else 'desc') }}"
+                               class="text-decoration-none text-dark">
+                                ID
+                                {% if sort == 'id' %}
+                                    {{ '▲' if direction == 'asc' else '▼' }}
+                                {% endif %}
+                            </a>
+                        </th>
+                        <th>
+                            <a href="{{ url_for('vendors_list', search=search, active_only='true' if active_only else 'false', sort='name', direction='asc' if sort != 'name' or direction == 'desc' else 'desc') }}"
+                               class="text-decoration-none text-dark">
+                                Name
+                                {% if sort == 'name' %}
+                                    {{ '▲' if direction == 'asc' else '▼' }}
+                                {% endif %}
+                            </a>
+                        </th>
                         <th>Phone</th>
                         <th>Email</th>
                         <th>City, State</th>
@@ -71,11 +86,10 @@
                     {% for vendor in vendors %}
                     <tr>
                         <td><strong>#{{ vendor.id }}</strong></td>
-                        <td>{{ vendor.first_name }}</td>
                         <td>
-                            <a href="{{ url_for('vendor_view', vendor_id=vendor.id) }}" 
+                            <a href="{{ url_for('vendor_view', vendor_id=vendor.id) }}"
                                class="text-decoration-none">
-                                {{ vendor.last_name }}
+                                {{ vendor.full_name }}
                             </a>
                         </td>
                         <td>{{ vendor.phone or '-' }}</td>

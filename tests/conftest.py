@@ -2,6 +2,8 @@
 Pytest configuration and shared fixtures for SkiSale tests.
 """
 import pytest
+import sqlalchemy as sa
+from sqlalchemy.pool import StaticPool
 from app import app as flask_app
 from models import db as _db, Vendor, Inventory, Invoice, InvoiceLine
 
@@ -10,10 +12,24 @@ from models import db as _db, Vendor, Inventory, Invoice, InvoiceLine
 def app():
     flask_app.config.update({
         'TESTING': True,
-        'SQLALCHEMY_DATABASE_URI': 'sqlite:///:memory:',
         'WTF_CSRF_ENABLED': False,
         'SECRET_KEY': 'test-secret-key',
     })
+
+    # Flask-SQLAlchemy creates the production engine during init_app at startup
+    # and caches it. We can't call init_app again once Flask has handled its
+    # first request (it raises AssertionError), so we directly swap the engine
+    # in the internal cache. StaticPool ensures all connections share the same
+    # in-memory database so SQLite doesn't create a fresh empty DB per connection.
+    test_engine = sa.create_engine(
+        'sqlite:///:memory:',
+        connect_args={'check_same_thread': False},
+        poolclass=StaticPool,
+    )
+    engine_cache = _db._app_engines[flask_app]
+    prod_engine = engine_cache.get(None)
+    engine_cache[None] = test_engine
+
     ctx = flask_app.app_context()
     ctx.push()
     _db.create_all()
@@ -23,6 +39,14 @@ def app():
     _db.session.remove()
     _db.drop_all()
     ctx.pop()
+
+    # Dispose the test engine and restore the production engine so other code
+    # that runs after this fixture (e.g. the next test's setup) finds a clean state.
+    test_engine.dispose()
+    if prod_engine is not None:
+        engine_cache[None] = prod_engine
+    else:
+        engine_cache.pop(None, None)
 
 
 @pytest.fixture()

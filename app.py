@@ -5,6 +5,8 @@ Main application file with vendor management
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
 import os
+import csv
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
@@ -111,13 +113,15 @@ def vendors_list():
         active_only = active_only == 'true'
     
     search = request.args.get('search', '')
-    
+    sort = request.args.get('sort', 'name')
+    direction = request.args.get('direction', 'asc')
+
     # Build query
     query = Vendor.query
-    
+
     if active_only:
         query = query.filter_by(active=True)
-    
+
     if search:
         search_term = f'%{search}%'
         query = query.filter(
@@ -127,13 +131,23 @@ def vendors_list():
                 Vendor.email.ilike(search_term)
             )
         )
-    
-    vendors = query.order_by(Vendor.last_name, Vendor.first_name).all()
-    
-    return render_template('vendors_list.html', 
-                         vendors=vendors, 
+
+    if sort == 'id':
+        order = Vendor.id.desc() if direction == 'desc' else Vendor.id
+    else:
+        if direction == 'desc':
+            order = (Vendor.last_name.desc(), Vendor.first_name.desc())
+        else:
+            order = (Vendor.last_name, Vendor.first_name)
+
+    vendors = query.order_by(*order if isinstance(order, tuple) else (order,)).all()
+
+    return render_template('vendors_list.html',
+                         vendors=vendors,
                          active_only=active_only,
-                         search=search)
+                         search=search,
+                         sort=sort,
+                         direction=direction)
 
 @app.route('/vendors/new', methods=['GET', 'POST'])
 def vendor_new():
@@ -221,6 +235,143 @@ def vendor_view(vendor_id):
     vendor = db.get_or_404(Vendor, vendor_id)
     return render_template('vendor_view.html', vendor=vendor)
 
+@app.route('/vendors/<int:vendor_id>/import', methods=['GET', 'POST'])
+def vendor_import_csv(vendor_id):
+    """Import inventory items from a CSV file for a vendor."""
+    vendor = db.get_or_404(Vendor, vendor_id)
+
+    if request.method == 'GET':
+        return render_template('vendor_import.html', vendor=vendor)
+
+    # POST: process uploaded file
+    uploaded_file = request.files.get('csv_file')
+    if not uploaded_file or not uploaded_file.filename:
+        flash('Please select a CSV file to upload.', 'error')
+        return render_template('vendor_import.html', vendor=vendor)
+
+    if not uploaded_file.filename.lower().endswith('.csv'):
+        flash('File must be a .csv file.', 'error')
+        return render_template('vendor_import.html', vendor=vendor)
+
+    # Read file as text
+    stream = io.StringIO(uploaded_file.stream.read().decode('utf-8-sig'))
+    reader = csv.DictReader(stream)
+
+    # Normalise header names to lowercase with no spaces for flexible matching
+    if reader.fieldnames is None:
+        flash('The CSV file appears to be empty.', 'error')
+        return render_template('vendor_import.html', vendor=vendor)
+
+    # Map normalised header → actual header name
+    header_map = {h.strip().lower().replace(' ', '_'): h for h in reader.fieldnames}
+
+    def get_col(row, *candidates):
+        """Return the first matching column value, or None."""
+        for name in candidates:
+            if name in header_map:
+                return row.get(header_map[name], '').strip()
+        return None
+
+    imported, skipped = [], []
+
+    for line_num, row in enumerate(reader, start=2):
+        sku         = get_col(row, 'sku', 'barcode', 'item_number', 'upc')
+        description = get_col(row, 'description', 'desc', 'item_description', 'name', 'item_name')
+        price_raw   = get_col(row, 'price', 'cost', 'amount', 'retail_price', 'retail')
+        equip_type  = get_col(row, 'equipment_type', 'type', 'equipment', 'category', 'item_type')
+
+        # Validate required fields
+        if not sku:
+            skipped.append({'row': line_num, 'sku': '(blank)', 'reason': 'Missing SKU'})
+            continue
+
+        if not price_raw:
+            skipped.append({'row': line_num, 'sku': sku, 'reason': 'Missing price'})
+            continue
+
+        try:
+            price = float(price_raw.replace('$', '').replace(',', ''))
+        except ValueError:
+            skipped.append({'row': line_num, 'sku': sku, 'reason': f'Invalid price: {price_raw!r}'})
+            continue
+
+        # Check for duplicate SKU
+        if Inventory.query.filter_by(sku=sku).first():
+            skipped.append({'row': line_num, 'sku': sku, 'reason': 'SKU already exists'})
+            continue
+
+        # Map equipment type to a known value, default to 'Other'
+        matched_type = 'Other'
+        if equip_type:
+            for known in EQUIPMENT_TYPES:
+                if equip_type.lower() == known.lower():
+                    matched_type = known
+                    break
+
+        item = Inventory(
+            sku=sku,
+            vendor_id=vendor.id,
+            equipment_type=matched_type,
+            description=description or '',
+            price=price,
+            status='Not In Stock',
+        )
+        db.session.add(item)
+        imported.append({'sku': sku, 'description': description or '—',
+                         'type': matched_type, 'price': price})
+
+    if imported:
+        db.session.commit()
+
+    return render_template('vendor_import.html', vendor=vendor,
+                           imported=imported, skipped=skipped)
+
+@app.route('/vendors/<int:vendor_id>/checkin', methods=['GET', 'POST'])
+def vendor_checkin(vendor_id):
+    """Scan SKUs to mark items as In-Stock for a vendor."""
+    vendor = db.get_or_404(Vendor, vendor_id)
+
+    # Items still awaiting check-in (owned by this vendor, not yet in stock)
+    CHECKIN_STATUSES = ['Not In Stock', 'Returned to Vendor']
+    pending_items = (Inventory.query
+                     .filter_by(vendor_id=vendor.id)
+                     .filter(Inventory.status.in_(CHECKIN_STATUSES))
+                     .order_by(Inventory.sku)
+                     .all())
+
+    checked_in_item = None
+
+    if request.method == 'POST':
+        sku = request.form.get('sku', '').strip()
+
+        if not sku:
+            flash('Please enter or scan a SKU.', 'error')
+        else:
+            item = Inventory.query.filter_by(sku=sku).first()
+
+            if not item:
+                flash(f'SKU {sku} not found.', 'error')
+            elif item.vendor_id != vendor.id:
+                flash(f'SKU {sku} belongs to a different consignor — not checked in.', 'error')
+            elif item.status == 'In-Stock':
+                flash(f'SKU {sku} ({item.description or item.equipment_type}) is already In-Stock.', 'warning')
+            elif item.status not in CHECKIN_STATUSES:
+                flash(f'SKU {sku} has status "{item.status}" and cannot be checked in.', 'error')
+            else:
+                item.status = 'In-Stock'
+                db.session.commit()
+                checked_in_item = item
+                # Refresh pending list after change
+                pending_items = (Inventory.query
+                                 .filter_by(vendor_id=vendor.id)
+                                 .filter(Inventory.status.in_(CHECKIN_STATUSES))
+                                 .order_by(Inventory.sku)
+                                 .all())
+
+    return render_template('vendor_checkin.html', vendor=vendor,
+                           pending_items=pending_items,
+                           checked_in_item=checked_in_item)
+
 # ============================================================================
 # INVENTORY ROUTES
 # ============================================================================
@@ -255,7 +406,7 @@ def inventory_list():
             )
         )
     
-    inventory_items = query.order_by(Inventory.created_at.desc()).all()
+    inventory_items = query.order_by(Inventory.sku).all()
     vendors = Vendor.query.filter_by(active=True).order_by(Vendor.last_name, Vendor.first_name).all()
     
     return render_template('inventory_list.html', 
