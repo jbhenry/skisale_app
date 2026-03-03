@@ -2,12 +2,20 @@
 SkiSale Flask Application
 Main application file with vendor management
 """
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
 from sqlalchemy import text
 import os
 import csv
 import io
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from datetime import date
+from reportlab.pdfgen import canvas as rl_canvas
+from reportlab.lib.pagesizes import letter as rl_letter
+from reportlab.lib.units import inch
+from reportlab.lib import colors as rl_colors
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
@@ -816,6 +824,426 @@ def invoice_delete(invoice_id):
         flash(f'Error deleting invoice: {str(e)}', 'error')
     
     return redirect(url_for('invoices_list'))
+
+# ============================================================================
+# ADMIN ROUTES
+# ============================================================================
+
+@app.route('/admin')
+def admin():
+    """Administration page — not linked from main navigation"""
+    return render_template('admin.html')
+
+@app.route('/admin/payout-report')
+def admin_payout_report():
+    """Generate an xlsx payout report — one row per consignor with amounts owed."""
+    # Gather per-vendor sales data from invoice lines
+    vendor_data = {}
+    for invoice in Invoice.query.all():
+        for line in invoice.lines:
+            item = line.inventory_item
+            vid = item.vendor_id
+            if vid not in vendor_data:
+                vendor_data[vid] = {'sold_price': 0.0, 'items_sold': 0}
+            vendor_data[vid]['sold_price'] += line.price
+            vendor_data[vid]['items_sold'] += 1
+
+    # Build rows — only vendors with at least one sold item
+    vendors = (Vendor.query
+               .filter(Vendor.id.in_(vendor_data.keys()))
+               .order_by(Vendor.id)
+               .all())
+
+    # ---- Build workbook ----
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Payout Report'
+
+    # Styles
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='1E3C72')
+    center = Alignment(horizontal='center')
+    right  = Alignment(horizontal='right')
+    money_fmt = '"$"#,##0.00'
+    thin = Side(style='thin')
+    border = Border(bottom=thin)
+
+    # Header row
+    headers = [
+        'Vendor #', 'Last Name', 'First Name',
+        'Address', 'City', 'State', 'ZIP',
+        'Items Consigned', 'Items Sold',
+        'Total Sold Price', 'Commission Rate', 'Commission Withheld', 'Total Payout'
+    ]
+    ws.append(headers)
+    for col, _ in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+
+    # Data rows
+    for vendor in vendors:
+        d = vendor_data[vendor.id]
+        items_consigned = len(vendor.inventory_items)
+        sold_price      = d['sold_price']
+        commission      = sold_price * vendor.commission_rate
+        payout          = sold_price - commission
+
+        address = ' '.join(filter(None, [vendor.address1, vendor.address2]))
+        row = [
+            vendor.id,
+            vendor.last_name,
+            vendor.first_name,
+            address,
+            vendor.city or '',
+            vendor.state or '',
+            vendor.zip_code or '',
+            items_consigned,
+            d['items_sold'],
+            sold_price,
+            vendor.commission_rate,
+            commission,
+            payout,
+        ]
+        ws.append(row)
+        r = ws.max_row
+        # Format money / percent columns
+        for col in (10, 12, 13):
+            ws.cell(r, col).number_format = money_fmt
+        ws.cell(r, 11).number_format = '0%'
+        for col in (1, 8, 9):
+            ws.cell(r, col).alignment = center
+
+    # Totals row
+    if len(vendors) > 0:
+        data_start = 2
+        data_end   = ws.max_row
+        ws.append([])  # blank spacer
+        total_row = ws.max_row + 1
+        ws.cell(total_row, 9,  value='TOTALS:').font = Font(bold=True)
+        for col, formula_col in ((10, 'J'), (12, 'L'), (13, 'M')):
+            cell = ws.cell(total_row, col,
+                           value=f'=SUM({formula_col}{data_start}:{formula_col}{data_end})')
+            cell.number_format = money_fmt
+            cell.font = Font(bold=True)
+            cell.border = Border(top=thin, bottom=Side(style='double'))
+
+    # Column widths
+    col_widths = [10, 16, 16, 30, 16, 6, 10, 16, 12, 16, 16, 20, 14]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # Freeze header row
+    ws.freeze_panes = 'A2'
+
+    # Stream to response
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    filename = f'payout_report_{date.today().isoformat()}.xlsx'
+    return Response(
+        buf.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+# Organization info printed on checks — update before printing
+ORG_NAME  = 'Mt. Brighton Ski Patrol Ski Swap'
+ORG_ADDR1 = '4590 Brighton Road'
+ORG_ADDR2 = 'Brighton, MI 48116'
+CHECK_NUMBER_START = 1001  # First check number in the run
+
+def _amount_to_words(amount):
+    """Convert a dollar amount to written form for check printing."""
+    ones = [
+        '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen',
+    ]
+    tens_words = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty',
+                  'Sixty', 'Seventy', 'Eighty', 'Ninety']
+
+    def _say(n):
+        if n == 0:   return ''
+        if n < 20:   return ones[n]
+        if n < 100:
+            return f'{tens_words[n // 10]} {ones[n % 10]}'.strip()
+        if n < 1_000:
+            rest = _say(n % 100)
+            return f'{ones[n // 100]} Hundred {rest}'.strip()
+        if n < 1_000_000:
+            rest = _say(n % 1_000)
+            return f'{_say(n // 1_000)} Thousand {rest}'.strip()
+        return str(n)
+
+    dollars = int(amount)
+    cents   = round((amount - dollars) * 100)
+    return f'{_say(dollars) or "Zero"} and {cents:02d}/100'
+
+
+@app.route('/admin/print-checks')
+def admin_print_checks():
+    """Generate a print-ready PDF: one check per page, top third = check,
+    middle and bottom thirds = consignor stubs."""
+    # ── Gather per-vendor payout data ────────────────────────────────────────
+    vendor_sales  = {}   # vid -> total sold dollars
+    vendor_items  = {}   # vid -> count of items sold
+    for invoice in Invoice.query.all():
+        for line in invoice.lines:
+            vid = line.inventory_item.vendor_id
+            vendor_sales[vid] = vendor_sales.get(vid, 0.0) + line.price
+            vendor_items[vid] = vendor_items.get(vid, 0)  + 1
+
+    vendors = (Vendor.query
+               .filter(Vendor.id.in_(vendor_sales.keys()))
+               .order_by(Vendor.id)
+               .all())
+
+    payees = []
+    for i, v in enumerate(vendors):
+        sold            = vendor_sales[v.id]
+        commission      = sold * v.commission_rate
+        payout          = sold - commission
+        if payout <= 0:
+            continue
+        addr1     = ' '.join(filter(None, [v.address1 or '', v.address2 or ''])).strip()
+        city_line = ', '.join(filter(None, [v.city, v.state]))
+        if v.zip_code:
+            city_line += f'  {v.zip_code}'
+        payees.append({
+            'check_num':       CHECK_NUMBER_START + i,
+            'vendor_id':       v.id,
+            'name':            v.full_name,
+            'addr1':           addr1,
+            'addr2':           city_line.strip(),
+            'items_consigned': len(v.inventory_items),
+            'items_sold':      vendor_items[v.id],
+            'sold_price':      sold,
+            'commission_rate': v.commission_rate,
+            'commission':      commission,
+            'amount':          payout,
+        })
+
+    # ── PDF layout constants ──────────────────────────────────────────────────
+    W, H      = rl_letter            # 612 × 792 pts
+    SECTION_H = H / 3                # 264 pts = 3.667" — one third of page
+    MARGIN    = 0.3 * inch           # side margin
+    INNER     = 6
+    L         = MARGIN + INNER
+    R         = W - MARGIN - INNER
+    today_str = date.today().strftime('%B %d, %Y')
+
+    # Section top-y values (ReportLab y=0 is bottom of page)
+    CHECK_TOP = H             # top of check section  (y: 792 → 528)
+    STUB1_TOP = H - SECTION_H # top of stub 1          (y: 528 → 264)
+    STUB2_TOP = SECTION_H     # top of stub 2          (y: 264 → 0)
+
+    def dashed_cut_line(c, y):
+        """Full-width dashed perforation line."""
+        c.setDash(4, 4)
+        c.setStrokeColor(rl_colors.HexColor('#999999'))
+        c.setLineWidth(0.5)
+        c.line(0, y, W, y)
+        c.setDash()
+        c.setStrokeColor(rl_colors.black)
+
+    # ── Draw the check (top third) ────────────────────────────────────────────
+    def draw_check(c, data):
+        top_y = CHECK_TOP
+        bot_y = STUB1_TOP
+
+        # Border
+        c.setStrokeColor(rl_colors.black)
+        c.setLineWidth(0.75)
+        c.rect(MARGIN, bot_y + 2, W - 2 * MARGIN, SECTION_H - 4)
+
+        # Org name & address (top-left)
+        c.setFont('Helvetica-Bold', 12)
+        c.drawString(L, top_y - 20, ORG_NAME)
+        c.setFont('Helvetica', 9)
+        c.drawString(L, top_y - 33, ORG_ADDR1)
+        c.drawString(L, top_y - 44, ORG_ADDR2)
+
+        # Check number & date (top-right)
+        c.setFont('Helvetica-Bold', 10)
+        c.drawRightString(R, top_y - 20, f'No. {data["check_num"]}')
+        c.setFont('Helvetica', 9)
+        c.drawRightString(R, top_y - 33, f'Date:  {today_str}')
+
+        # Dividing rule
+        c.setLineWidth(0.5)
+        c.line(L, top_y - 56, R, top_y - 56)
+
+        # "PAY TO THE ORDER OF" label
+        c.setFont('Helvetica', 8)
+        c.drawString(L, top_y - 74, 'PAY TO THE ORDER OF:')
+
+        # Payee name
+        c.setFont('Helvetica-Bold', 14)
+        c.drawString(L, top_y - 92, data['name'])
+
+        # Payee address
+        c.setFont('Helvetica', 8)
+        if data['addr1']:
+            c.drawString(L, top_y - 104, data['addr1'])
+        if data['addr2']:
+            c.drawString(L, top_y - 115, data['addr2'])
+
+        # Amount box (right side, aligned with payee name)
+        box_w = 1.35 * inch
+        box_x = R - box_w
+        c.setLineWidth(1)
+        c.rect(box_x, top_y - 97, box_w, 26)
+        c.setFont('Helvetica-Bold', 14)
+        c.drawCentredString(box_x + box_w / 2, top_y - 88, f'${data["amount"]:,.2f}')
+
+        # Underline from payee to amount box
+        c.setLineWidth(0.5)
+        c.line(L, top_y - 120, box_x - 6, top_y - 120)
+
+        # Amount in words
+        words   = _amount_to_words(data['amount'])
+        words_y = top_y - 140
+        c.setFont('Helvetica', 10)
+        c.drawString(L, words_y, words)
+        text_w = c.stringWidth(words, 'Helvetica', 10)
+        c.line(L + text_w + 4, words_y + 3, R - 55, words_y + 3)
+        c.setFont('Helvetica-Bold', 10)
+        c.drawRightString(R, words_y, 'DOLLARS')
+
+        # Memo & signature
+        memo_y = top_y - 184
+        c.setFont('Helvetica', 9)
+        c.drawString(L, memo_y, 'MEMO:  Ski Sale Consignment Payout')
+        sig_x = R - 1.9 * inch
+        c.setLineWidth(0.5)
+        c.line(sig_x, memo_y, R, memo_y)
+        c.setFont('Helvetica', 8)
+        c.drawCentredString(sig_x + 0.95 * inch, memo_y - 11, 'Authorized Signature')
+
+        # MICR placeholder
+        c.setFont('Helvetica', 8)
+        c.setFillColor(rl_colors.HexColor('#888888'))
+        c.drawString(L, bot_y + 14,
+                     f'\u2446 ROUTING NUMBER \u2446  ACCOUNT NUMBER \u2447  {data["check_num"]}')
+        c.setFillColor(rl_colors.black)
+
+        # Dashed cut line at bottom of check
+        dashed_cut_line(c, bot_y)
+
+    # ── Draw a stub (middle or bottom third) ──────────────────────────────────
+    def draw_stub(c, top_y, data, label):
+        bot_y = top_y - SECTION_H
+        MID   = W / 2   # center column divider
+
+        # Light border
+        c.setStrokeColor(rl_colors.HexColor('#aaaaaa'))
+        c.setLineWidth(0.5)
+        c.rect(MARGIN, bot_y + 2, W - 2 * MARGIN, SECTION_H - 4)
+        c.setStrokeColor(rl_colors.black)
+
+        # Header band
+        c.setFillColor(rl_colors.HexColor('#1e3c72'))
+        c.rect(MARGIN, top_y - 26, W - 2 * MARGIN, 22, fill=1, stroke=0)
+        c.setFillColor(rl_colors.white)
+        c.setFont('Helvetica-Bold', 10)
+        c.drawString(L, top_y - 18, f'{ORG_NAME}  —  {label}')
+        c.drawRightString(R, top_y - 18, f'Check No. {data["check_num"]}  |  {today_str}')
+        c.setFillColor(rl_colors.black)
+
+        # Consignor name (large)
+        c.setFont('Helvetica-Bold', 13)
+        c.drawString(L, top_y - 46, data['name'])
+        if data['addr1']:
+            c.setFont('Helvetica', 9)
+            c.drawString(L, top_y - 58, data['addr1'])
+        if data['addr2']:
+            c.drawString(L, top_y - 69, data['addr2'])
+
+        # Vertical divider between left narrative and right summary
+        c.setLineWidth(0.5)
+        c.setStrokeColor(rl_colors.HexColor('#cccccc'))
+        c.line(MID, top_y - 32, MID, bot_y + 10)
+        c.setStrokeColor(rl_colors.black)
+
+        # ── Left column: line-item breakdown ──────────────────────────────
+        lx  = L
+        row_y = top_y - 88
+        row_h = 16
+
+        def stub_row(label_text, value_text, bold=False, y=None):
+            nonlocal row_y
+            ty = y if y is not None else row_y
+            font = 'Helvetica-Bold' if bold else 'Helvetica'
+            c.setFont(font, 9)
+            c.drawString(lx, ty, label_text)
+            c.drawRightString(MID - 10, ty, value_text)
+            if y is None:
+                row_y -= row_h
+
+        stub_row('Items Consigned:',  str(data['items_consigned']))
+        stub_row('Items Sold:',        str(data['items_sold']))
+        stub_row('',                   '')       # spacer
+        stub_row('Total Sold Price:',  f'${data["sold_price"]:,.2f}')
+        stub_row(f'Commission ({data["commission_rate"]:.0%}):',
+                              f'- ${data["commission"]:,.2f}')
+
+        # Divider above payout
+        c.setLineWidth(0.5)
+        c.line(lx, row_y + row_h - 2, MID - 10, row_y + row_h - 2)
+
+        stub_row('NET PAYOUT:', f'${data["amount"]:,.2f}', bold=True)
+
+        # ── Right column: amount box ───────────────────────────────────────
+        rx       = MID + 10
+        center_x = (MID + W - MARGIN) / 2
+        box_w    = 1.5 * inch
+        box_h    = 0.5 * inch
+        box_x    = center_x - box_w / 2
+        box_y    = top_y - 120
+
+        c.setFont('Helvetica', 8)
+        c.drawCentredString(center_x, top_y - 46, 'Consignor ID:')
+        c.setFont('Helvetica-Bold', 12)
+        c.drawCentredString(center_x, top_y - 58, f'#{data["vendor_id"]}')
+
+        c.setFont('Helvetica', 8)
+        c.drawCentredString(center_x, box_y + box_h + 8, 'CHECK AMOUNT')
+        c.setLineWidth(1.5)
+        c.setStrokeColor(rl_colors.HexColor('#1e3c72'))
+        c.rect(box_x, box_y, box_w, box_h)
+        c.setStrokeColor(rl_colors.black)
+        c.setFont('Helvetica-Bold', 16)
+        c.drawCentredString(center_x, box_y + 14, f'${data["amount"]:,.2f}')
+
+        c.setFont('Helvetica', 8)
+        c.setFillColor(rl_colors.HexColor('#555555'))
+        c.drawCentredString(center_x, box_y - 12,
+                            _amount_to_words(data['amount']))
+        c.setFillColor(rl_colors.black)
+
+        # Dashed cut line at bottom of stub
+        dashed_cut_line(c, bot_y)
+
+    # ── Build PDF ─────────────────────────────────────────────────────────────
+    buf = io.BytesIO()
+    c   = rl_canvas.Canvas(buf, pagesize=rl_letter)
+
+    for data in payees:
+        draw_check(c, data)
+        draw_stub(c, STUB1_TOP, data, 'Consignor Copy 1')
+        draw_stub(c, STUB2_TOP, data, 'Consignor Copy 2')
+        c.showPage()
+
+    c.save()
+    buf.seek(0)
+    filename = f'checks_{date.today().isoformat()}.pdf'
+    return Response(
+        buf.getvalue(),
+        mimetype='application/pdf',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
 
 # API endpoints for inventory
 @app.route('/api/inventory')

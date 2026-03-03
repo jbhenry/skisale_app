@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Administration - SkiSale Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="bi bi-gear"></i> Administration</h2>
+            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Setup Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-tools"></i> Setup</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Pre-sale configuration and setup tasks.</p>
+                <div class="list-group list-group-flush">
+                    <!-- Placeholder for future setup items -->
+                    <div class="list-group-item text-muted fst-italic">
+                        <i class="bi bi-dash"></i> No setup tasks configured yet.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Close-Out Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="bi bi-flag-fill"></i> Close-Out</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">End-of-sale reports and close-out tasks.</p>
+                <div class="list-group list-group-flush">
+                    <a href="{{ url_for('admin_payout_report') }}"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-spreadsheet fs-4 text-success"></i>
+                        <div>
+                            <strong>Payout Report</strong>
+                            <div class="text-muted small">Download an .xlsx spreadsheet listing every consignor check to be written — items consigned, items sold, commission withheld, and net payout.</div>
+                        </div>
+                        <i class="bi bi-download ms-auto text-muted"></i>
+                    </a>
+                    <a href="{{ url_for('admin_print_checks') }}"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
+                        <div>
+                            <strong>Print Checks</strong>
+                            <div class="text-muted small">Download a print-ready PDF of vendor payout checks, 3-up per page. Print on blank check stock.</div>
+                        </div>
+                        <i class="bi bi-download ms-auto text-muted"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
