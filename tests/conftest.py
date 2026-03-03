@@ -78,7 +78,7 @@ def sample_vendor(db):
 @pytest.fixture()
 def sample_item(db, sample_vendor):
     item = Inventory(
-        sku='0001234',
+        sku=1234567,
         vendor_id=sample_vendor.id,
         equipment_type='Skis',
         description='Fischer RC4 160cm',

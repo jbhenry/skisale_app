@@ -32,11 +32,11 @@
                             <label for="sku" class="form-label">
                                 SKU (Barcode) <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="sku" 
-                                   name="sku" required maxlength="7" pattern="\d{7}"
+                            <input type="number" class="form-control" id="sku"
+                                   name="sku" required min="1" max="9999999"
                                    value="{{ item.sku if item else '' }}"
                                    placeholder="1234567" autofocus>
-                            <small class="text-muted">7-digit number</small>
+                            <small class="text-muted">Up to 7-digit number</small>
                         </div>
                         <div class="col-md-6">
                             <label for="vendor_id" class="form-label">

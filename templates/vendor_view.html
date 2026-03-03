@@ -211,7 +211,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for item in vendor.inventory_items %}
+                            {% for item in vendor.inventory_items|sort(attribute='sku') %}
                             <tr>
                                 <td>
                                     <a href="{{ url_for('inventory_view', item_id=item.id) }}">

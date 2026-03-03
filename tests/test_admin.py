@@ -30,9 +30,9 @@ def populated_db(db):
     db.session.add_all([v1, v2])
     db.session.flush()
 
-    item1 = Inventory(sku='1000001', vendor_id=v1.id,
+    item1 = Inventory(sku=1000001, vendor_id=v1.id,
                       equipment_type='Skis', price=100.00, status='Sold')
-    item2 = Inventory(sku='1000002', vendor_id=v2.id,
+    item2 = Inventory(sku=1000002, vendor_id=v2.id,
                       equipment_type='Boots', price=50.00, status='Sold')
     db.session.add_all([item1, item2])
     db.session.flush()
@@ -125,17 +125,17 @@ def full_db(db):
     db.session.add_all([v1, v2, v3])
     db.session.flush()
 
-    item1 = Inventory(sku='2000001', vendor_id=v1.id, equipment_type='Skis',
+    item1 = Inventory(sku=2000001, vendor_id=v1.id, equipment_type='Skis',
                       description='Test Ski A', price=100.00, status='Sold')
-    item2 = Inventory(sku='2000002', vendor_id=v1.id, equipment_type='Boots',
+    item2 = Inventory(sku=2000002, vendor_id=v1.id, equipment_type='Boots',
                       description='Test Boot B', price=80.00, status='In-Stock')
-    item3 = Inventory(sku='2000003', vendor_id=v1.id, equipment_type='Poles',
+    item3 = Inventory(sku=2000003, vendor_id=v1.id, equipment_type='Poles',
                       description='Test Pole C', price=60.00, status='Donated')
-    item4 = Inventory(sku='2000004', vendor_id=v2.id, equipment_type='Snowboards',
+    item4 = Inventory(sku=2000004, vendor_id=v2.id, equipment_type='Snowboards',
                       description='Test Board D', price=200.00, status='Sold')
-    item5 = Inventory(sku='2000005', vendor_id=v2.id, equipment_type='Helmets',
+    item5 = Inventory(sku=2000005, vendor_id=v2.id, equipment_type='Helmets',
                       description='Test Helmet E', price=120.00, status='In-Stock')
-    item6 = Inventory(sku='2000006', vendor_id=v3.id, equipment_type='Goggles',
+    item6 = Inventory(sku=2000006, vendor_id=v3.id, equipment_type='Goggles',
                       description='Test Goggles F', price=50.00, status='In-Stock')
     db.session.add_all([item1, item2, item3, item4, item5, item6])
     db.session.flush()
@@ -249,17 +249,17 @@ class TestInstockReport:
         wb = parse_xlsx(client.get('/admin/report-instock'))
         data = rows(wb.active)
         skus = [r[0] for r in data if r[0] is not None]
-        assert '2000002' in skus   # item2 In-Stock ✓
-        assert '2000005' in skus   # item5 In-Stock ✓
-        assert '2000006' in skus   # item6 In-Stock ✓
-        assert '2000001' not in skus  # Sold ✗
-        assert '2000003' not in skus  # Donated ✗
-        assert '2000004' not in skus  # Sold ✗
+        assert 2000002 in skus   # item2 In-Stock ✓
+        assert 2000005 in skus   # item5 In-Stock ✓
+        assert 2000006 in skus   # item6 In-Stock ✓
+        assert 2000001 not in skus  # Sold ✗
+        assert 2000003 not in skus  # Donated ✗
+        assert 2000004 not in skus  # Sold ✗
 
     def test_correct_item_count(self, client, full_db):
         wb = parse_xlsx(client.get('/admin/report-instock'))
-        # Only count rows whose first cell is a SKU string (excludes totals row)
-        data = [r for r in rows(wb.active) if isinstance(r[0], str)]
+        # Data rows have vendor_id in col 1; totals row has None there
+        data = [r for r in rows(wb.active) if r[0] is not None and r[1] is not None]
         assert len(data) == 3
 
     def test_prices_are_correct(self, client, full_db):
@@ -268,8 +268,8 @@ class TestInstockReport:
         prices = {ws_row[0].value: ws_row[price_col - 1].value
                   for ws_row in wb.active.iter_rows(min_row=3)
                   if ws_row[0].value is not None}
-        assert prices.get('2000002') == pytest.approx(80.00)
-        assert prices.get('2000005') == pytest.approx(120.00)
+        assert prices.get(2000002) == pytest.approx(80.00)
+        assert prices.get(2000005) == pytest.approx(120.00)
 
     def test_empty_db_returns_200(self, client, db):
         response = client.get('/admin/report-instock')
@@ -297,18 +297,18 @@ class TestDonatedReport:
         wb = parse_xlsx(client.get('/admin/report-donated'))
         data = rows(wb.active)
         skus = [r[0] for r in data if r[0] is not None]
-        assert '2000003' in skus      # item3 Donated ✓
-        assert '2000002' not in skus  # In-Stock ✗
-        assert '2000001' not in skus  # Sold ✗
+        assert 2000003 in skus      # item3 Donated ✓
+        assert 2000002 not in skus  # In-Stock ✗
+        assert 2000001 not in skus  # Sold ✗
 
     def test_correct_donated_count(self, client, full_db):
         wb = parse_xlsx(client.get('/admin/report-donated'))
-        data = [r for r in rows(wb.active) if isinstance(r[0], str)]
+        data = [r for r in rows(wb.active) if r[0] is not None and r[1] is not None]
         assert len(data) == 1
 
     def test_correct_donated_price(self, client, full_db):
         wb = parse_xlsx(client.get('/admin/report-donated'))
-        data_row = next(r for r in rows(wb.active) if r[0] == '2000003')
+        data_row = next(r for r in rows(wb.active) if r[0] == 2000003)
         assert data_row[5] == pytest.approx(60.00)  # col F = Price
 
     def test_empty_db_returns_200(self, client, db):

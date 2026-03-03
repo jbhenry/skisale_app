@@ -33,7 +33,7 @@ class TestVendorModel:
 class TestInventoryModel:
     def test_to_dict(self, sample_item):
         d = sample_item.to_dict()
-        assert d['sku'] == '0001234'
+        assert d['sku'] == 1234567
         assert d['equipment_type'] == 'Skis'
         assert d['price'] == 150.00
         assert d['status'] == 'In-Stock'
@@ -65,7 +65,7 @@ class TestInvoiceModel:
         items = []
         for i, price in enumerate([50.00, 75.00, 25.00], start=1):
             item = Inventory(
-                sku=f'999000{i}',
+                sku=9990000 + i,
                 vendor_id=sample_vendor.id,
                 equipment_type='Boots',
                 price=price,

@@ -4,7 +4,7 @@ Main application file with vendor management
 """
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, Response
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
-from sqlalchemy import text
+from sqlalchemy import text, cast, String
 import os
 import csv
 import io
@@ -80,6 +80,27 @@ with app.app_context():
             db.session.commit()
         except Exception:
             db.session.rollback()  # Column already exists — nothing to do
+
+    # Migrate sku column from VARCHAR to INTEGER if upgrading from an older schema.
+    # SQLite doesn't support ALTER COLUMN, so we rename → recreate → copy → drop.
+    try:
+        col_info = db.session.execute(text("PRAGMA table_info(inventory)")).fetchall()
+        sku_type = next((row[2] for row in col_info if row[1] == 'sku'), None)
+        if sku_type and sku_type.upper() != 'INTEGER':
+            db.session.execute(text("ALTER TABLE inventory RENAME TO _inventory_old"))
+            db.session.commit()
+            db.create_all()  # creates inventory with INTEGER sku
+            db.session.execute(text("""
+                INSERT INTO inventory (id, sku, vendor_id, equipment_type, description,
+                    price, status, donate_if_not_sold, notes, created_at, updated_at)
+                SELECT id, CAST(sku AS INTEGER), vendor_id, equipment_type, description,
+                    price, status, donate_if_not_sold, notes, created_at, updated_at
+                FROM _inventory_old
+            """))
+            db.session.execute(text("DROP TABLE _inventory_old"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 @app.route('/')
 def index():
@@ -345,6 +366,14 @@ def vendor_import_csv(vendor_id):
             skipped.append({'row': line_num, 'sku': '(blank)', 'reason': 'Missing SKU'})
             continue
 
+        try:
+            sku = int(sku)
+            if not (1 <= sku <= 9999999):
+                raise ValueError
+        except ValueError:
+            skipped.append({'row': line_num, 'sku': str(sku), 'reason': 'SKU must be a number 1–9999999'})
+            continue
+
         if not price_raw:
             skipped.append({'row': line_num, 'sku': sku, 'reason': 'Missing price'})
             continue
@@ -402,11 +431,17 @@ def vendor_checkin(vendor_id):
     checked_in_item = None
 
     if request.method == 'POST':
-        sku = request.form.get('sku', '').strip()
-
-        if not sku:
+        sku_raw = request.form.get('sku', '').strip()
+        sku = None
+        if not sku_raw:
             flash('Please enter or scan a SKU.', 'error')
         else:
+            try:
+                sku = int(sku_raw)
+            except ValueError:
+                flash(f'SKU "{sku_raw}" is not a valid number.', 'error')
+
+        if sku is not None:
             item = Inventory.query.filter_by(sku=sku).first()
 
             if not item:
@@ -473,10 +508,17 @@ def vendor_checkout(vendor_id):
 
         else:
             # Barcode scan — resolve by SKU
-            sku = request.form.get('sku', '').strip()
-            if not sku:
+            sku_raw = request.form.get('sku', '').strip()
+            sku = None
+            if not sku_raw:
                 flash('Please enter or scan a SKU.', 'error')
             else:
+                try:
+                    sku = int(sku_raw)
+                except ValueError:
+                    flash(f'SKU "{sku_raw}" is not a valid number.', 'error')
+
+            if sku is not None:
                 item = Inventory.query.filter_by(sku=sku).first()
                 if not item:
                     flash(f'SKU {sku} not found.', 'error')
@@ -533,7 +575,7 @@ def inventory_list():
         search_term = f'%{search}%'
         query = query.filter(
             db.or_(
-                Inventory.sku.ilike(search_term),
+                cast(Inventory.sku, String).like(search_term),
                 Inventory.description.ilike(search_term)
             )
         )
@@ -558,7 +600,7 @@ def inventory_new():
     if request.method == 'POST':
         try:
             item = Inventory(
-                sku=request.form['sku'].strip(),
+                sku=int(request.form['sku']),
                 vendor_id=int(request.form['vendor_id']),
                 equipment_type=request.form['equipment_type'],
                 description=request.form.get('description', '').strip(),
@@ -598,7 +640,7 @@ def inventory_edit(item_id):
     
     if request.method == 'POST':
         try:
-            item.sku = request.form['sku'].strip()
+            item.sku = int(request.form['sku'])
             item.vendor_id = int(request.form['vendor_id'])
             item.equipment_type = request.form['equipment_type']
             item.description = request.form.get('description', '').strip()
@@ -695,8 +737,13 @@ def invoice_edit(invoice_id):
         
         if action == 'add_item':
             # Add item by SKU
-            sku = request.form.get('sku', '').strip()
-            item = Inventory.query.filter_by(sku=sku).first()
+            sku_raw = request.form.get('sku', '').strip()
+            try:
+                sku = int(sku_raw) if sku_raw else None
+            except ValueError:
+                sku = None
+                flash(f'SKU "{sku_raw}" is not a valid number.', 'error')
+            item = Inventory.query.filter_by(sku=sku).first() if sku is not None else None
             
             if not item:
                 flash(f'Item with SKU {sku} not found.', 'error')

@@ -73,7 +73,7 @@ class Inventory(db.Model):
     __tablename__ = 'inventory'
     
     id = db.Column(db.Integer, primary_key=True)
-    sku = db.Column(db.String(7), unique=True, nullable=False)  # 7-digit SKU/barcode
+    sku = db.Column(db.Integer, unique=True, nullable=False)  # up to 7-digit SKU
     vendor_id = db.Column(db.Integer, db.ForeignKey('vendors.id'), nullable=False)
     
     # Item details
