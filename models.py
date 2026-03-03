@@ -79,13 +79,14 @@ class Inventory(db.Model):
     price = db.Column(db.Float, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='In-Stock')
     
+    donate_if_not_sold = db.Column(db.Boolean, default=False, nullable=False)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
-    
+
     def __repr__(self):
         return f'<Inventory SKU:{self.sku} - {self.equipment_type}>'
-    
+
     def to_dict(self):
         """Convert to dictionary for JSON responses"""
         return {
@@ -97,6 +98,7 @@ class Inventory(db.Model):
             'description': self.description,
             'price': self.price,
             'status': self.status,
+            'donate_if_not_sold': self.donate_if_not_sold,
             'notes': self.notes,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None

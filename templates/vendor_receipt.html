@@ -213,9 +213,10 @@
             <tr>
                 <th style="width:90px;">SKU</th>
                 <th>Description</th>
-                <th style="width:110px;">Type</th>
-                <th class="right" style="width:80px;">Price</th>
-                <th style="width:110px;">Status</th>
+                <th style="width:100px;">Type</th>
+                <th class="right" style="width:75px;">Price</th>
+                <th style="width:100px;">Status</th>
+                <th style="width:65px;">Donate?</th>
             </tr>
         </thead>
         <tbody>
@@ -226,21 +227,22 @@
                 <td>{{ item.equipment_type }}</td>
                 <td class="right">${{ "%.2f"|format(item.price) }}</td>
                 <td>{{ item.status }}</td>
+                <td style="text-align:center;">{{ 'Yes' if item.donate_if_not_sold else '' }}</td>
             </tr>
             {% endfor %}
         </tbody>
         <tfoot>
             <tr class="subtotal">
                 <td colspan="3">{{ checkedin_items|length }} item{{ 's' if checkedin_items|length != 1 }} total &mdash; {{ instock_items|length }} In-Stock</td>
-                <td class="right" colspan="2">In-Stock Value: ${{ "%.2f"|format(instock_value) }}</td>
+                <td class="right" colspan="3">In-Stock Value: ${{ "%.2f"|format(instock_value) }}</td>
             </tr>
             <tr>
                 <td colspan="3"></td>
-                <td class="right" colspan="2">Commission ({{ (vendor.commission_rate * 100)|int }}%): ${{ "%.2f"|format(commission_amt) }}</td>
+                <td class="right" colspan="3">Commission ({{ (vendor.commission_rate * 100)|int }}%): ${{ "%.2f"|format(commission_amt) }}</td>
             </tr>
             <tr class="payout">
                 <td colspan="3"></td>
-                <td class="right" colspan="2">Estimated Payout: ${{ "%.2f"|format(payout_amt) }}</td>
+                <td class="right" colspan="3">Estimated Payout: ${{ "%.2f"|format(payout_amt) }}</td>
             </tr>
         </tfoot>
     </table>

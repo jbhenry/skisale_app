@@ -75,6 +75,7 @@
                         <th>Description</th>
                         <th>Price</th>
                         <th>Status</th>
+                        <th title="Donate If Not Sold">Donate?</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
@@ -113,6 +114,11 @@
                             <span class="badge bg-secondary">{{ item.status }}</span>
                             {% endif %}
                         </td>
+                        <td class="text-center">
+                            {% if item.donate_if_not_sold %}
+                            <i class="bi bi-heart-fill text-danger" title="Donate if not sold"></i>
+                            {% endif %}
+                        </td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ url_for('inventory_view', item_id=item.id) }}" 
@@ -137,7 +143,7 @@
                     <tr>
                         <td colspan="4" class="text-end"><strong>Total:</strong></td>
                         <td><strong>${{ "%.2f"|format(inventory_items|sum(attribute='price')) }}</strong></td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                 </tfoot>
             </table>

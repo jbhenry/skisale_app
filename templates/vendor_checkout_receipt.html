@@ -236,9 +236,10 @@
             <tr>
                 <th style="width:90px;">SKU</th>
                 <th>Description</th>
-                <th style="width:100px;">Type</th>
-                <th class="right" style="width:75px;">Price</th>
-                <th style="width:120px;">Status</th>
+                <th style="width:95px;">Type</th>
+                <th class="right" style="width:70px;">Price</th>
+                <th style="width:110px;">Status</th>
+                <th style="width:65px;">Donate?</th>
             </tr>
         </thead>
         <tbody>
@@ -265,6 +266,7 @@
                     <span class="status-other">{{ item.status }}</span>
                     {% endif %}
                 </td>
+                <td style="text-align:center;">{{ 'Yes' if item.donate_if_not_sold else '' }}</td>
             </tr>
             {% endfor %}
         </tbody>

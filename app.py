@@ -4,6 +4,7 @@ Main application file with vendor management
 """
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
+from sqlalchemy import text
 import os
 import csv
 import io
@@ -50,9 +51,17 @@ PAYMENT_METHODS = [
 # Default sales tax rate (can be changed per invoice)
 DEFAULT_TAX_RATE = 0.06  # 6%
 
-# Create tables
+# Create tables and run lightweight column migrations
 with app.app_context():
     db.create_all()
+    # Add donate_if_not_sold column if upgrading from an older schema
+    try:
+        db.session.execute(text(
+            'ALTER TABLE inventory ADD COLUMN donate_if_not_sold BOOLEAN NOT NULL DEFAULT 0'
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()  # Column already exists — nothing to do
 
 @app.route('/')
 def index():
@@ -508,6 +517,7 @@ def inventory_new():
                 description=request.form.get('description', '').strip(),
                 price=float(request.form['price']),
                 status=request.form['status'],
+                donate_if_not_sold=request.form.get('donate_if_not_sold') == 'on',
                 notes=request.form.get('notes', '').strip()
             )
             
@@ -547,6 +557,7 @@ def inventory_edit(item_id):
             item.description = request.form.get('description', '').strip()
             item.price = float(request.form['price'])
             item.status = request.form['status']
+            item.donate_if_not_sold = request.form.get('donate_if_not_sold') == 'on'
             item.notes = request.form.get('notes', '').strip()
             
             db.session.commit()

@@ -207,6 +207,7 @@
                                 <th>Description</th>
                                 <th>Price</th>
                                 <th>Status</th>
+                                <th title="Donate If Not Sold">Donate?</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -227,6 +228,11 @@
                                     <span class="badge bg-primary">{{ item.status }}</span>
                                     {% else %}
                                     <span class="badge bg-secondary">{{ item.status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if item.donate_if_not_sold %}
+                                    <i class="bi bi-heart-fill text-danger" title="Donate if not sold"></i>
                                     {% endif %}
                                 </td>
                             </tr>
