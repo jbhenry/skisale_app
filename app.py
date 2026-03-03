@@ -435,16 +435,17 @@ def vendor_checkin(vendor_id):
 
 @app.route('/vendors/<int:vendor_id>/checkout', methods=['GET', 'POST'])
 def vendor_checkout(vendor_id):
-    """Scan SKUs or click buttons to return/donate In-Stock items for a vendor."""
+    """Scan SKUs or click buttons to return/donate In-Stock or Rejected items for a vendor."""
     vendor = db.get_or_404(Vendor, vendor_id)
 
-    def _refresh_in_stock():
+    def _refresh_checkout_items():
         return (Inventory.query
-                .filter_by(vendor_id=vendor.id, status='In-Stock')
+                .filter(Inventory.vendor_id == vendor.id,
+                        Inventory.status.in_(['In-Stock', 'Rejected']))
                 .order_by(Inventory.sku)
                 .all())
 
-    in_stock_items = _refresh_in_stock()
+    checkout_items = _refresh_checkout_items()
     actioned_item = None
     action_label = None
 
@@ -457,8 +458,8 @@ def vendor_checkout(vendor_id):
             item = db.get_or_404(Inventory, item_id)
             if item.vendor_id != vendor.id:
                 flash(f'SKU {item.sku} belongs to a different consignor.', 'error')
-            elif item.status != 'In-Stock':
-                flash(f'SKU {item.sku} is no longer In-Stock (status: "{item.status}").', 'warning')
+            elif item.status not in ('In-Stock', 'Rejected'):
+                flash(f'SKU {item.sku} has status "{item.status}" and cannot be actioned.', 'warning')
             else:
                 if action == 'return_item':
                     item.status = 'Returned to Vendor'
@@ -468,7 +469,7 @@ def vendor_checkout(vendor_id):
                     action_label = 'Donated'
                 db.session.commit()
                 actioned_item = item
-                in_stock_items = _refresh_in_stock()
+                checkout_items = _refresh_checkout_items()
 
         else:
             # Barcode scan — resolve by SKU
@@ -483,17 +484,17 @@ def vendor_checkout(vendor_id):
                     flash(f'SKU {sku} belongs to a different consignor — not checked out.', 'error')
                 elif item.status == 'Returned to Vendor':
                     flash(f'SKU {sku} ({item.description or item.equipment_type}) has already been returned.', 'warning')
-                elif item.status != 'In-Stock':
+                elif item.status not in ('In-Stock', 'Rejected'):
                     flash(f'SKU {sku} has status "{item.status}" and cannot be returned.', 'error')
                 else:
                     item.status = 'Returned to Vendor'
                     db.session.commit()
                     actioned_item = item
                     action_label = 'Returned'
-                    in_stock_items = _refresh_in_stock()
+                    checkout_items = _refresh_checkout_items()
 
     return render_template('vendor_checkout.html', vendor=vendor,
-                           in_stock_items=in_stock_items,
+                           checkout_items=checkout_items,
                            actioned_item=actioned_item,
                            action_label=action_label)
 
@@ -834,6 +835,21 @@ def admin():
     """Administration page — not linked from main navigation"""
     return render_template('admin.html')
 
+@app.route('/admin/initialize-db', methods=['POST'])
+def admin_initialize_db():
+    """Truncate sales data and deactivate all vendors to reset for a new swap."""
+    try:
+        InvoiceLine.query.delete()
+        Invoice.query.delete()
+        Inventory.query.delete()
+        Vendor.query.update({'active': False})
+        db.session.commit()
+        flash('Database initialized: all sales data cleared and consignors set to inactive.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error initializing database: {str(e)}', 'error')
+    return redirect(url_for('admin'))
+
 @app.route('/admin/payout-report')
 def admin_payout_report():
     """Generate an xlsx payout report — one row per consignor with amounts owed."""
@@ -868,16 +884,23 @@ def admin_payout_report():
     thin = Side(style='thin')
     border = Border(bottom=thin)
 
-    # Header row
+    # Title row
+    num_cols = 12
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
+    title_cell = ws.cell(1, 1, value='Payout Report')
+    title_cell.font = Font(bold=True, size=16)
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Header row (row 2)
     headers = [
-        'Vendor #', 'Last Name', 'First Name',
+        'Vendor #', 'Consignor Name',
         'Address', 'City', 'State', 'ZIP',
         'Items Consigned', 'Items Sold',
         'Total Sold Price', 'Commission Rate', 'Commission Withheld', 'Total Payout'
     ]
     ws.append(headers)
     for col, _ in enumerate(headers, start=1):
-        cell = ws.cell(row=1, column=col)
+        cell = ws.cell(row=2, column=col)
         cell.font = header_font
         cell.fill = header_fill
         cell.alignment = center
@@ -893,8 +916,7 @@ def admin_payout_report():
         address = ' '.join(filter(None, [vendor.address1, vendor.address2]))
         row = [
             vendor.id,
-            vendor.last_name,
-            vendor.first_name,
+            vendor.full_name,
             address,
             vendor.city or '',
             vendor.state or '',
@@ -909,20 +931,20 @@ def admin_payout_report():
         ws.append(row)
         r = ws.max_row
         # Format money / percent columns
-        for col in (10, 12, 13):
+        for col in (9, 11, 12):
             ws.cell(r, col).number_format = money_fmt
-        ws.cell(r, 11).number_format = '0%'
-        for col in (1, 8, 9):
+        ws.cell(r, 10).number_format = '0%'
+        for col in (1, 7, 8):
             ws.cell(r, col).alignment = center
 
     # Totals row
     if len(vendors) > 0:
-        data_start = 2
+        data_start = 3
         data_end   = ws.max_row
         ws.append([])  # blank spacer
         total_row = ws.max_row + 1
-        ws.cell(total_row, 9,  value='TOTALS:').font = Font(bold=True)
-        for col, formula_col in ((10, 'J'), (12, 'L'), (13, 'M')):
+        ws.cell(total_row, 8,  value='TOTALS:').font = Font(bold=True)
+        for col, formula_col in ((9, 'I'), (11, 'K'), (12, 'L')):
             cell = ws.cell(total_row, col,
                            value=f'=SUM({formula_col}{data_start}:{formula_col}{data_end})')
             cell.number_format = money_fmt
@@ -930,12 +952,12 @@ def admin_payout_report():
             cell.border = Border(top=thin, bottom=Side(style='double'))
 
     # Column widths
-    col_widths = [10, 16, 16, 30, 16, 6, 10, 16, 12, 16, 16, 20, 14]
+    col_widths = [10, 24, 30, 16, 6, 10, 16, 12, 16, 16, 20, 14]
     for i, w in enumerate(col_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
     # Freeze header row
-    ws.freeze_panes = 'A2'
+    ws.freeze_panes = 'A3'
 
     # Stream to response
     buf = io.BytesIO()
@@ -947,6 +969,177 @@ def admin_payout_report():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
+
+def _xlsx_response(wb, filename):
+    """Serialize a workbook to an xlsx download response."""
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return Response(
+        buf.getvalue(),
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+
+def _inventory_xlsx(title, status_filter, sheet_name):
+    """Build an xlsx workbook listing inventory items matching status_filter."""
+    items = (Inventory.query
+             .filter_by(status=status_filter)
+             .join(Vendor)
+             .order_by(Vendor.id, Inventory.sku)
+             .all())
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = sheet_name
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='1E3C72')
+    center      = Alignment(horizontal='center')
+    money_fmt   = '"$"#,##0.00'
+    thin        = Side(style='thin')
+
+    # Title row
+    num_cols = 6
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
+    title_cell = ws.cell(1, 1, value=title)
+    title_cell.font = Font(bold=True, size=16)
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Header row (row 2)
+    headers = ['SKU', 'Vendor #', 'Consignor Name', 'Equipment Type', 'Description', 'Price']
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=2, column=col)
+        cell.font  = header_font
+        cell.fill  = header_fill
+        cell.alignment = center
+
+    for item in items:
+        ws.append([
+            item.sku,
+            item.vendor_id,
+            item.vendor.full_name,
+            item.equipment_type,
+            item.description or '',
+            item.price,
+        ])
+        r = ws.max_row
+        ws.cell(r, 6).number_format = money_fmt
+        for col in (1, 2):
+            ws.cell(r, col).alignment = center
+
+    # Count + value totals
+    if items:
+        data_end = ws.max_row
+        ws.append([])
+        total_row = ws.max_row + 1
+        ws.cell(total_row, 5, value='TOTALS:').font = Font(bold=True)
+        ws.cell(total_row, 6, value=f'=SUM(F3:F{data_end})').number_format = money_fmt
+        ws.cell(total_row, 6).font = Font(bold=True)
+        ws.cell(total_row, 6).border = Border(
+            top=thin, bottom=Side(style='double'))
+        count_cell = ws.cell(total_row, 1, value=len(items))
+        count_cell.font      = Font(bold=True)
+        count_cell.alignment = center
+
+    col_widths = [10, 10, 22, 16, 36, 10]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A3'
+
+    return wb
+
+
+@app.route('/admin/report-instock')
+def admin_report_instock():
+    """Download xlsx of all inventory items still In-Stock."""
+    wb = _inventory_xlsx('In-Stock Inventory', 'In-Stock', 'In-Stock Items')
+    return _xlsx_response(wb, f'instock_report_{date.today().isoformat()}.xlsx')
+
+
+@app.route('/admin/report-donated')
+def admin_report_donated():
+    """Download xlsx of all inventory items marked Donated."""
+    wb = _inventory_xlsx('Donated Items', 'Donated', 'Donated Items')
+    return _xlsx_response(wb, f'donated_report_{date.today().isoformat()}.xlsx')
+
+
+@app.route('/admin/report-salestax')
+def admin_report_salestax():
+    """Download xlsx of sales tax collected, one row per invoice."""
+    invoices = Invoice.query.order_by(Invoice.invoice_date).all()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Sales Tax'
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='1E3C72')
+    center    = Alignment(horizontal='center')
+    money_fmt = '"$"#,##0.00'
+    thin      = Side(style='thin')
+
+    # Title row
+    num_cols = 8
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
+    title_cell = ws.cell(1, 1, value='Sales Tax Report')
+    title_cell.font      = Font(bold=True, size=16)
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Header row (row 2)
+    headers = [
+        'Invoice #', 'Date / Time', 'Customer',
+        'Payment Method', 'Subtotal', 'Tax Rate', 'Tax Collected', 'Total'
+    ]
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=2, column=col)
+        cell.font      = header_font
+        cell.fill      = header_fill
+        cell.alignment = center
+
+    # Data rows
+    for inv in invoices:
+        ws.append([
+            inv.id,
+            inv.invoice_date,
+            inv.customer_name or '',
+            inv.payment_method or '',
+            inv.subtotal,
+            inv.tax_rate,
+            inv.tax_amount,
+            inv.total,
+        ])
+        r = ws.max_row
+        ws.cell(r, 2).number_format = 'yyyy-mm-dd hh:mm'
+        ws.cell(r, 6).number_format = '0%'
+        for col in (5, 7, 8):
+            ws.cell(r, col).number_format = money_fmt
+        ws.cell(r, 1).alignment = center
+
+    # Totals row
+    if invoices:
+        data_start = 3
+        data_end   = ws.max_row
+        ws.append([])
+        total_row = ws.max_row + 1
+        ws.cell(total_row, 4, value='TOTALS:').font = Font(bold=True)
+        for col, letter in ((5, 'E'), (7, 'G'), (8, 'H')):
+            cell = ws.cell(total_row, col,
+                           value=f'=SUM({letter}{data_start}:{letter}{data_end})')
+            cell.number_format = money_fmt
+            cell.font   = Font(bold=True)
+            cell.border = Border(top=thin, bottom=Side(style='double'))
+
+    col_widths = [12, 20, 24, 18, 12, 10, 16, 12]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A3'
+
+    return _xlsx_response(wb, f'salestax_report_{date.today().isoformat()}.xlsx')
+
 
 # Organization info printed on checks — update before printing
 ORG_NAME  = 'Mt. Brighton Ski Patrol Ski Swap'
