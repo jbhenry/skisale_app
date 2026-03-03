@@ -41,11 +41,10 @@ INVENTORY_STATUSES = [
 ]
 
 PAYMENT_METHODS = [
-    'Cash',
     'Credit Card',
-    'Debit Card',
+    'Cash',
     'Check',
-    'Other'
+    'Venmo',
 ]
 
 # Default sales tax rate (can be changed per invoice)
@@ -62,6 +61,17 @@ with app.app_context():
         db.session.commit()
     except Exception:
         db.session.rollback()  # Column already exists — nothing to do
+
+    # Add surcharge columns if upgrading from an older schema
+    for col_sql in [
+        'ALTER TABLE invoices ADD COLUMN surcharge_rate FLOAT NOT NULL DEFAULT 0.0',
+        'ALTER TABLE invoices ADD COLUMN surcharge_amount FLOAT NOT NULL DEFAULT 0.0',
+    ]:
+        try:
+            db.session.execute(text(col_sql))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()  # Column already exists — nothing to do
 
 @app.route('/')
 def index():
@@ -417,46 +427,67 @@ def vendor_checkin(vendor_id):
 
 @app.route('/vendors/<int:vendor_id>/checkout', methods=['GET', 'POST'])
 def vendor_checkout(vendor_id):
-    """Scan SKUs to mark items as Returned to Vendor for a vendor."""
+    """Scan SKUs or click buttons to return/donate In-Stock items for a vendor."""
     vendor = db.get_or_404(Vendor, vendor_id)
 
-    # Items currently In-Stock for this vendor (eligible for return)
-    in_stock_items = (Inventory.query
-                      .filter_by(vendor_id=vendor.id, status='In-Stock')
-                      .order_by(Inventory.sku)
-                      .all())
+    def _refresh_in_stock():
+        return (Inventory.query
+                .filter_by(vendor_id=vendor.id, status='In-Stock')
+                .order_by(Inventory.sku)
+                .all())
 
-    checked_out_item = None
+    in_stock_items = _refresh_in_stock()
+    actioned_item = None
+    action_label = None
 
     if request.method == 'POST':
-        sku = request.form.get('sku', '').strip()
+        action = request.form.get('action', 'scan')
 
-        if not sku:
-            flash('Please enter or scan a SKU.', 'error')
-        else:
-            item = Inventory.query.filter_by(sku=sku).first()
-
-            if not item:
-                flash(f'SKU {sku} not found.', 'error')
-            elif item.vendor_id != vendor.id:
-                flash(f'SKU {sku} belongs to a different consignor — not checked out.', 'error')
-            elif item.status == 'Returned to Vendor':
-                flash(f'SKU {sku} ({item.description or item.equipment_type}) has already been returned.', 'warning')
+        if action in ('return_item', 'donate_item'):
+            # Per-row button click — resolve by item ID
+            item_id = request.form.get('item_id', type=int)
+            item = db.get_or_404(Inventory, item_id)
+            if item.vendor_id != vendor.id:
+                flash(f'SKU {item.sku} belongs to a different consignor.', 'error')
             elif item.status != 'In-Stock':
-                flash(f'SKU {sku} has status "{item.status}" and cannot be returned.', 'error')
+                flash(f'SKU {item.sku} is no longer In-Stock (status: "{item.status}").', 'warning')
             else:
-                item.status = 'Returned to Vendor'
+                if action == 'return_item':
+                    item.status = 'Returned to Vendor'
+                    action_label = 'Returned'
+                else:
+                    item.status = 'Donated'
+                    action_label = 'Donated'
                 db.session.commit()
-                checked_out_item = item
-                # Refresh list after change
-                in_stock_items = (Inventory.query
-                                  .filter_by(vendor_id=vendor.id, status='In-Stock')
-                                  .order_by(Inventory.sku)
-                                  .all())
+                actioned_item = item
+                in_stock_items = _refresh_in_stock()
+
+        else:
+            # Barcode scan — resolve by SKU
+            sku = request.form.get('sku', '').strip()
+            if not sku:
+                flash('Please enter or scan a SKU.', 'error')
+            else:
+                item = Inventory.query.filter_by(sku=sku).first()
+                if not item:
+                    flash(f'SKU {sku} not found.', 'error')
+                elif item.vendor_id != vendor.id:
+                    flash(f'SKU {sku} belongs to a different consignor — not checked out.', 'error')
+                elif item.status == 'Returned to Vendor':
+                    flash(f'SKU {sku} ({item.description or item.equipment_type}) has already been returned.', 'warning')
+                elif item.status != 'In-Stock':
+                    flash(f'SKU {sku} has status "{item.status}" and cannot be returned.', 'error')
+                else:
+                    item.status = 'Returned to Vendor'
+                    db.session.commit()
+                    actioned_item = item
+                    action_label = 'Returned'
+                    in_stock_items = _refresh_in_stock()
 
     return render_template('vendor_checkout.html', vendor=vendor,
                            in_stock_items=in_stock_items,
-                           checked_out_item=checked_out_item)
+                           actioned_item=actioned_item,
+                           action_label=action_label)
 
 # ============================================================================
 # INVENTORY ROUTES
@@ -469,20 +500,26 @@ def inventory_list():
     status_filter = request.args.get('status', '')
     equipment_filter = request.args.get('equipment', '')
     vendor_filter = request.args.get('vendor', '')
+    donate_filter = request.args.get('donate', '')
     search = request.args.get('search', '')
-    
+
     # Build query
     query = Inventory.query
-    
+
     if status_filter:
         query = query.filter_by(status=status_filter)
-    
+
     if equipment_filter:
         query = query.filter_by(equipment_type=equipment_filter)
-    
+
     if vendor_filter:
         query = query.filter_by(vendor_id=int(vendor_filter))
-    
+
+    if donate_filter == 'yes':
+        query = query.filter_by(donate_if_not_sold=True)
+    elif donate_filter == 'no':
+        query = query.filter_by(donate_if_not_sold=False)
+
     if search:
         search_term = f'%{search}%'
         query = query.filter(
@@ -491,11 +528,11 @@ def inventory_list():
                 Inventory.description.ilike(search_term)
             )
         )
-    
+
     inventory_items = query.order_by(Inventory.sku).all()
     vendors = Vendor.query.filter_by(active=True).order_by(Vendor.last_name, Vendor.first_name).all()
-    
-    return render_template('inventory_list.html', 
+
+    return render_template('inventory_list.html',
                          inventory_items=inventory_items,
                          vendors=vendors,
                          equipment_types=EQUIPMENT_TYPES,
@@ -503,6 +540,7 @@ def inventory_list():
                          status_filter=status_filter,
                          equipment_filter=equipment_filter,
                          vendor_filter=vendor_filter,
+                         donate_filter=donate_filter,
                          search=search)
 
 @app.route('/inventory/new', methods=['GET', 'POST'])
@@ -731,7 +769,28 @@ def invoice_edit(invoice_id):
 def invoice_view(invoice_id):
     """View invoice details"""
     invoice = db.get_or_404(Invoice, invoice_id)
-    return render_template('invoice_view.html', invoice=invoice)
+    returns_mode = request.args.get('returns') == '1'
+    return render_template('invoice_view.html', invoice=invoice, returns_mode=returns_mode)
+
+@app.route('/invoices/<int:invoice_id>/return_item', methods=['POST'])
+def invoice_return_item(invoice_id):
+    """Return a single line item: remove from invoice, set inventory back to In-Stock"""
+    invoice = db.get_or_404(Invoice, invoice_id)
+    line_id = int(request.form.get('line_id'))
+    line = db.get_or_404(InvoiceLine, line_id)
+
+    try:
+        sku = line.inventory_item.sku
+        line.inventory_item.status = 'In-Stock'
+        db.session.delete(line)
+        invoice.calculate_totals()
+        db.session.commit()
+        flash(f'Item {sku} returned to stock.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error returning item: {str(e)}', 'error')
+
+    return redirect(url_for('invoice_view', invoice_id=invoice_id, returns='1'))
 
 @app.route('/invoices/<int:invoice_id>/receipt')
 def invoice_receipt(invoice_id):

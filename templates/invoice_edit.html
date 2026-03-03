@@ -152,6 +152,12 @@
                                 <td>Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</td>
                                 <td class="text-end"><strong>${{ "%.2f"|format(invoice.tax_amount) }}</strong></td>
                             </tr>
+                            {% if invoice.surcharge_amount %}
+                            <tr>
+                                <td>{{ invoice.payment_method }} Surcharge ({{ (invoice.surcharge_rate * 100)|round(0)|int }}%):</td>
+                                <td class="text-end"><strong>${{ "%.2f"|format(invoice.surcharge_amount) }}</strong></td>
+                            </tr>
+                            {% endif %}
                             <tr class="border-top">
                                 <td><h4>Total:</h4></td>
                                 <td class="text-end"><h4 class="text-success">${{ "%.2f"|format(invoice.total) }}</h4></td>

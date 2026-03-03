@@ -21,12 +21,12 @@
             <div class="col-md-3">
                 <div class="input-group">
                     <span class="input-group-text"><i class="bi bi-search"></i></span>
-                    <input type="text" class="form-control" name="search" 
-                           placeholder="Search SKU or description..." 
+                    <input type="text" class="form-control" name="search"
+                           placeholder="Search SKU or description..."
                            value="{{ search }}">
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <select class="form-select" name="equipment" onchange="this.form.submit()">
                     <option value="">All Equipment Types</option>
                     {% for eq_type in equipment_types %}
@@ -53,8 +53,15 @@
                 </select>
             </div>
             <div class="col-md-2">
+                <select class="form-select" name="donate" onchange="this.form.submit()">
+                    <option value="">Donate? (All)</option>
+                    <option value="yes" {% if donate_filter == 'yes' %}selected{% endif %}>Donate: Yes</option>
+                    <option value="no"  {% if donate_filter == 'no'  %}selected{% endif %}>Donate: No</option>
+                </select>
+            </div>
+            <div class="col-md-1">
                 <button type="submit" class="btn btn-outline-primary w-100">
-                    <i class="bi bi-funnel"></i> Filter
+                    <i class="bi bi-funnel"></i>
                 </button>
             </div>
         </form>

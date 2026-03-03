@@ -163,13 +163,13 @@
     <!-- Screen-only toolbar -->
     <div class="toolbar no-print">
         <button class="btn btn-primary" onclick="window.print()">&#128438; Print Receipt</button>
-        <a class="btn btn-secondary" href="{{ url_for('vendor_view', vendor_id=vendor.id) }}">&larr; Back to {{ vendor.full_name }}</a>
+        <button class="btn btn-secondary" onclick="window.close()">Close</button>
     </div>
 
     <!-- Header -->
     <div class="receipt-header">
         <div>
-            <p class="org-name">SkiSale</p>
+            <p class="org-name">Mt. Brighton Ski Patrol Ski Swap</p>
             <p class="org-sub">Consignment Ski Sale</p>
         </div>
         <div class="receipt-title">

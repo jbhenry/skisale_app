@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-lg-10 mx-auto">
+    <div class="col-lg-11 mx-auto">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-box-arrow-right"></i> Check Out Items</h2>
@@ -14,8 +14,8 @@
         </div>
 
         <div class="row">
-            <!-- Left: Scanner -->
-            <div class="col-lg-5">
+            <!-- Left: Scanner + summary -->
+            <div class="col-lg-4">
 
                 <!-- Scan form -->
                 <div class="card mb-3">
@@ -27,6 +27,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST" id="scanForm">
+                            <input type="hidden" name="action" value="scan">
                             <div class="input-group input-group-lg">
                                 <span class="input-group-text"><i class="bi bi-upc"></i></span>
                                 <input type="text" class="form-control" name="sku"
@@ -35,7 +36,7 @@
                                        autocomplete="off"
                                        autofocus required>
                                 <button type="submit" class="btn btn-warning">
-                                    <i class="bi bi-box-arrow-right"></i> Check Out
+                                    <i class="bi bi-box-arrow-right"></i> Return
                                 </button>
                             </div>
                         </form>
@@ -45,14 +46,14 @@
                     </div>
                 </div>
 
-                <!-- Last scanned result -->
-                {% if checked_out_item %}
-                <div class="alert alert-warning d-flex align-items-center">
-                    <i class="bi bi-box-arrow-right fs-4 me-3"></i>
+                <!-- Last actioned result -->
+                {% if actioned_item %}
+                <div class="alert alert-{{ 'warning' if action_label == 'Returned' else 'info' }} d-flex align-items-center">
+                    <i class="bi bi-{{ 'box-arrow-right' if action_label == 'Returned' else 'heart-fill' }} fs-4 me-3"></i>
                     <div>
-                        <strong>Returned: {{ checked_out_item.sku }}</strong><br>
-                        {{ checked_out_item.description or checked_out_item.equipment_type }}
-                        &mdash; ${{ "%.2f"|format(checked_out_item.price) }}
+                        <strong>{{ action_label }}: {{ actioned_item.sku }}</strong><br>
+                        {{ actioned_item.description or actioned_item.equipment_type }}
+                        &mdash; ${{ "%.2f"|format(actioned_item.price) }}
                     </div>
                 </div>
                 {% endif %}
@@ -80,7 +81,7 @@
             </div>
 
             <!-- Right: In-Stock items list -->
-            <div class="col-lg-7">
+            <div class="col-lg-8">
                 <div class="card">
                     <div class="card-header">
                         <h5 class="mb-0">
@@ -99,6 +100,8 @@
                                         <th>Description</th>
                                         <th>Type</th>
                                         <th class="text-end">Price</th>
+                                        <th class="text-center" title="Donate If Not Sold">Donate?</th>
+                                        <th class="text-end">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -108,6 +111,31 @@
                                         <td>{{ item.description or '—' }}</td>
                                         <td>{{ item.equipment_type }}</td>
                                         <td class="text-end">${{ "%.2f"|format(item.price) }}</td>
+                                        <td class="text-center">
+                                            {% if item.donate_if_not_sold %}
+                                            <i class="bi bi-heart-fill text-danger" title="Donate if not sold"></i>
+                                            {% endif %}
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="btn-group btn-group-sm">
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="action" value="return_item">
+                                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                                    <button type="submit" class="btn btn-outline-warning"
+                                                            title="Return to Vendor">
+                                                        <i class="bi bi-box-arrow-right"></i> Return
+                                                    </button>
+                                                </form>
+                                                <form method="POST" style="display:inline;">
+                                                    <input type="hidden" name="action" value="donate_item">
+                                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                                    <button type="submit" class="btn btn-outline-danger"
+                                                            title="Mark as Donated">
+                                                        <i class="bi bi-heart"></i> Donate
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>

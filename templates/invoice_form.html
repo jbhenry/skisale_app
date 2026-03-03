@@ -33,9 +33,8 @@
                         <div class="col-md-6">
                             <label for="payment_method" class="form-label">Payment Method</label>
                             <select class="form-select" id="payment_method" name="payment_method">
-                                <option value="">--Select--</option>
                                 {% for method in payment_methods %}
-                                <option value="{{ method }}">{{ method }}</option>
+                                <option value="{{ method }}" {% if method == 'Credit Card' %}selected{% endif %}>{{ method }}</option>
                                 {% endfor %}
                             </select>
                         </div>
