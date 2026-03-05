@@ -8,10 +8,11 @@ from sqlalchemy import text, cast, String
 import os
 import csv
 import io
+import sqlite3
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from datetime import date
+from datetime import date, datetime
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.pagesizes import letter as rl_letter
 from reportlab.lib.units import inch
@@ -80,6 +81,11 @@ with app.app_context():
             db.session.commit()
         except Exception:
             db.session.rollback()  # Column already exists — nothing to do
+
+    # Enable WAL mode for better concurrent read performance
+    db.session.execute(text('PRAGMA journal_mode=WAL'))
+    db.session.execute(text('PRAGMA busy_timeout=5000'))
+    db.session.commit()
 
     # Migrate sku column from VARCHAR to INTEGER if upgrading from an older schema.
     # SQLite doesn't support ALTER COLUMN, so we rename → recreate → copy → drop.
@@ -1186,6 +1192,29 @@ def admin_report_salestax():
     ws.freeze_panes = 'A3'
 
     return _xlsx_response(wb, f'salestax_report_{date.today().isoformat()}.xlsx')
+
+
+@app.route('/admin/backup-db', methods=['POST'])
+def admin_backup_db():
+    """Create a timestamped backup of the SQLite database using the online backup API."""
+    db_path = db.engine.url.database  # absolute path resolved by SQLAlchemy
+    backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
+    os.makedirs(backup_dir, exist_ok=True)
+
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    backup_path = os.path.join(backup_dir, f'skisale_backup_{timestamp}.db')
+
+    try:
+        src = sqlite3.connect(db_path)
+        dst = sqlite3.connect(backup_path)
+        src.backup(dst)
+        dst.close()
+        src.close()
+        flash(f'Backup saved: backups/skisale_backup_{timestamp}.db', 'success')
+    except Exception as e:
+        flash(f'Backup failed: {e}', 'danger')
+
+    return redirect(url_for('admin'))
 
 
 # Organization info printed on checks — update before printing

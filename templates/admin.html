@@ -20,6 +20,16 @@
             <div class="card-body">
                 <p class="text-muted">Pre-sale configuration and setup tasks.</p>
                 <div class="list-group list-group-flush">
+                    <form method="POST" action="{{ url_for('admin_backup_db') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-0">
+                        <button type="submit" class="btn w-100 text-start d-flex align-items-center gap-3 p-3 border-0 bg-transparent">
+                            <i class="bi bi-cloud-arrow-down fs-4 text-primary"></i>
+                            <div>
+                                <strong>Backup Database</strong>
+                                <div class="text-muted small">Save a timestamped copy of the database to the <code>backups/</code> folder. Safe to run at any time during the sale.</div>
+                            </div>
+                            <i class="bi bi-save ms-auto text-muted"></i>
+                        </button>
+                    </form>
                     <button type="button"
                             class="list-group-item list-group-item-action d-flex align-items-center gap-3"
                             data-bs-toggle="modal" data-bs-target="#initDbModal">
