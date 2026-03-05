@@ -1,151 +1,125 @@
-# SkiSale Manager - Consignor Module
+# SkiSale Manager
 
-Python/Flask web application to replace Microsoft Access SkiSale database for consignment ski sales.
+Flask web application for managing consignment ski sales — consignors, inventory, point-of-sale, and end-of-sale reporting.
 
-## What's Included
+## Features
 
-This is the **Consignor Management** module with:
-- ✅ Create, view, edit, and deactivate consignors
-- ✅ Track commission rates and payment preferences
-- ✅ Search and filter consignors
-- ✅ Clean, modern web interface
-- ✅ SQLite database (easy to migrate to PostgreSQL later)
-- ✅ Responsive design (works on desktop, tablet, mobile)
+- **Dashboard** — live financial summary: sales, tax collected, commissions, vendor payouts
+- **Consignor management** — add/edit consignors, commission rates, payment preferences; soft-delete (inactive flag)
+- **Inventory** — track items by SKU (1–9999999), equipment type, price, and status; bulk CSV import; barcode scanner support throughout
+- **Check-in / Check-out** — scan consignor items in at drop-off, scan them back out at pickup; printable receipts
+- **Point of sale** — invoice workflow with barcode scanning, configurable sales tax, 3% surcharge auto-applied for Credit Card and Venmo
+- **Reports (xlsx download)**
+  - Payout Report — one row per consignor with items sold, commission withheld, net payout
+  - Remaining Inventory — all In-Stock items
+  - Donated Items — all items marked Donated
+  - Sales Tax Report — one row per invoice with subtotal, tax rate, tax collected, total
+- **Check printing** — print-ready PDF of vendor payout checks, 3-up per page
+- **Admin** — on-demand database backup, new-sale initialization
 
-## Setup Instructions
+## Tech Stack
 
-### 1. Install Python Requirements
+- Python 3 + Flask + SQLAlchemy + SQLite (WAL mode)
+- Jinja2 templates + Bootstrap 5
+- openpyxl (xlsx reports), ReportLab (PDF checks)
+- Recommended production server: [Waitress](https://docs.pylonsproject.org/projects/waitress/)
+
+## Setup
 
 ```bash
-cd skisale_app
+# Create and activate virtualenv (first time only)
+python3 -m venv .
+source bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-### 2. Run the Application
-
-```bash
+# Start the development server
 python app.py
 ```
 
-The app will start on **http://localhost:5000** (or your computer's IP address on port 5000)
+App runs at **http://localhost:5000**. The SQLite database is created automatically at first start.
 
-### 3. Access from Other Computers
+To pre-populate with sample data:
 
-If you want your 10 users to access this on the network:
-
-1. Find your computer's IP address:
-   - Windows: Run `ipconfig` in command prompt
-   - Mac/Linux: Run `ifconfig` or `ip addr`
-
-2. Other users can access via: `http://YOUR_IP:5000`
-   - Example: `http://192.168.1.100:5000`
-
-## Usage
-
-### Adding a Consignor
-
-1. Click "New Consignor" button
-2. Fill in required fields (First Name, Last Name)
-3. Set commission rate (default 20%)
-4. Optionally add contact info, address, payment method, and notes
-5. Click "Create Consignor"
-6. A Vendor ID will be automatically assigned
-
-### Viewing Consignors
-
-- **List View**: See all consignors in a table with their Vendor ID
-- **Detail View**: Click any consignor last name to see full details
-- **Search**: Use search box to filter by name or email
-- **Filter**: Toggle "Active consignors only" to hide inactive consignors
-
-### Editing a Consignor
-
-1. Click the pencil icon or open consignor detail view
-2. Click "Edit" button
-3. Make changes (note: Vendor ID cannot be changed)
-4. Click "Update Consignor"
-
-### Deactivating a Consignor
-
-Click the trash icon next to a consignor (soft delete - consignor remains in database but marked inactive)
-
-## Database
-
-- **Location**: `skisale_app/skisale.db` (SQLite file)
-- **Backup**: Just copy this file to backup your data
-- **Migration to PostgreSQL**: Easy to switch when you're ready for production
-
-## Database Schema
-
-### Vendors Table (Consignors)
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | Integer | Primary key (auto-increment) - this is the Vendor ID |
-| first_name | String(50) | Consignor's first name |
-| last_name | String(50) | Consignor's last name |
-| phone | String(20) | Phone number |
-| email | String(100) | Email address |
-| address1 | String(200) | Address line 1 |
-| address2 | String(200) | Address line 2 |
-| city | String(100) | City |
-| state | String(2) | State (2-letter code) |
-| zip_code | String(10) | ZIP/postal code |
-| commission_rate | Float | Commission rate (e.g., 0.20 for 20%) |
-| payment_method | String(20) | Preferred payment method (Cash, Check, PayPal, etc.) |
-| notes | Text | Additional notes |
-| active | Boolean | Is consignor active? |
-| created_at | DateTime | Creation timestamp |
-| updated_at | DateTime | Last update timestamp |
-
-## Next Steps
-
-Once you're happy with the Consignor module, we'll add:
-
-1. **Inventory** - Track ski equipment by consignor
-2. **Customers** - Customer management with discounts
-3. **Invoices** - Sales transactions with line items
-4. **Reports** - Sales reports, consignor payouts, inventory reports, etc.
-
-## API Endpoints
-
-The app includes REST API endpoints:
-
-- `GET /api/vendors` - List all active consignors (JSON)
-- `GET /api/vendors/<id>` - Get single consignor (JSON)
-
-These can be used for integrations or custom reports.
-
-## Customization
-
-### Change Port
-
-Edit `app.py`, line: `app.run(debug=True, host='0.0.0.0', port=5000)`
-
-Change `port=5000` to your preferred port.
-
-### Database Location
-
-Edit `app.py`, line: `app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///skisale.db'`
-
-## Troubleshooting
-
-**Port already in use**:
 ```bash
-# Use a different port
-python app.py
-# Then edit app.py to use port 5001 or another port
+python init_db.py
 ```
 
-**Can't access from other computers**:
-- Check your firewall allows port 5000
-- Make sure you're using `host='0.0.0.0'` in app.py
-- Verify all computers are on the same network
+## Running Tests
 
-**Database errors**:
-- Delete `skisale.db` file and restart (this will reset the database)
-- Check file permissions
+```bash
+source bin/activate
+python -m pytest tests/ -v      # full suite, verbose
+python -m pytest tests/ -q      # full suite, quiet
+python -m pytest tests/test_admin.py -v   # single file
+```
 
-## Support
+92 tests, all isolated with in-memory SQLite.
 
-Need help? Questions about next steps? Just ask!
+## Production Deployment
+
+Run under Waitress instead of the Flask dev server:
+
+```bash
+source bin/activate
+waitress-serve --host=0.0.0.0 --port=5000 app:app
+```
+
+- **Database**: `var/app-instance/skisale.db`
+- **Backups**: use the Backup button on the Admin page — saves a timestamped copy to `var/app-instance/backups/`
+- **Schema migrations**: handled automatically at startup via `ALTER TABLE` / table-recreate blocks in `app.py` — no Alembic needed
+
+## File Structure
+
+```
+skisale_app/
+├── app.py                  # All Flask routes (~1300 lines)
+├── models.py               # SQLAlchemy models: Vendor, Inventory, Invoice, InvoiceLine
+├── init_db.py              # Sample data loader
+├── requirements.txt
+├── pytest.ini
+├── tests/
+│   ├── conftest.py         # Fixtures: app, client, db, sample_vendor, sample_item, sample_invoice
+│   ├── test_models.py
+│   ├── test_vendors.py
+│   ├── test_inventory.py
+│   ├── test_invoices.py
+│   └── test_admin.py
+├── templates/              # Jinja2 + Bootstrap 5
+│   ├── base.html
+│   ├── dashboard.html
+│   ├── admin.html
+│   ├── vendors_list.html / vendor_form.html / vendor_view.html
+│   ├── vendor_checkin.html / vendor_checkout.html
+│   ├── vendor_receipt.html / vendor_checkout_receipt.html
+│   ├── vendor_import.html
+│   ├── inventory_list.html / inventory_form.html / inventory_view.html
+│   ├── invoices_list.html / invoice_form.html / invoice_edit.html
+│   ├── invoice_view.html / invoice_receipt.html
+└── var/
+    └── app-instance/
+        ├── skisale.db
+        └── backups/        # On-demand backups saved here
+```
+
+## Inventory Status Workflow
+
+```
+In-Stock → (add to invoice) → Pending → (complete invoice) → Sold
+                                ↓
+                         (remove from invoice)
+                                ↓
+                            In-Stock
+
+In-Stock / Rejected → (vendor checkout) → Returned to Vendor
+In-Stock            → (vendor checkout) → Donated
+```
+
+## Key Conventions
+
+- SKU is an integer, 1–9999999 (up to 7 digits)
+- Vendor payout = sale price × (1 − commission_rate), calculated from invoice lines only
+- 3% surcharge applied automatically for Credit Card and Venmo payments
+- Dashboard payouts are calculated from invoice lines, not from inventory status
+- Vendors are soft-deleted (active=False); inventory is hard-deleted
