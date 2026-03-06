@@ -1248,7 +1248,7 @@ def _amount_to_words(amount):
 
     dollars = int(amount)
     cents   = round((amount - dollars) * 100)
-    return f'{_say(dollars) or "Zero"} and {cents:02d}/100'
+    return f'{_say(dollars) or "Zero"} Dollars And {_say(cents) or "Zero"} Cents'
 
 
 @app.route('/admin/print-checks')
@@ -1280,18 +1280,38 @@ def admin_print_checks():
         city_line = ', '.join(filter(None, [v.city, v.state]))
         if v.zip_code:
             city_line += f'  {v.zip_code}'
+
+        # Inventory value breakdown
+        goods_received = 0.0
+        goods_donated  = 0.0
+        goods_returned = 0.0
+        goods_instock  = 0.0
+        for item in v.inventory_items:
+            goods_received += item.price
+            if item.status == 'Returned to Vendor':
+                goods_returned += item.price
+            elif item.status == 'In-Stock' and item.donate_if_not_sold:
+                goods_donated += item.price
+            elif item.status == 'In-Stock':
+                goods_instock += item.price
+
         payees.append({
-            'check_num':       CHECK_NUMBER_START + i,
-            'vendor_id':       v.id,
-            'name':            v.full_name,
-            'addr1':           addr1,
-            'addr2':           city_line.strip(),
-            'items_consigned': len(v.inventory_items),
-            'items_sold':      vendor_items[v.id],
-            'sold_price':      sold,
-            'commission_rate': v.commission_rate,
-            'commission':      commission,
-            'amount':          payout,
+            'check_num':      CHECK_NUMBER_START + i,
+            'vendor_id':      v.id,
+            'name':           v.full_name,
+            'addr1':          addr1,
+            'addr2':          city_line.strip(),
+            'phone':          v.phone or '',
+            'city':           v.city or '',
+            'state':          v.state or '',
+            'zip_code':       v.zip_code or '',
+            'goods_received': goods_received,
+            'goods_sold':     sold,
+            'goods_donated':  goods_donated,
+            'goods_returned': goods_returned,
+            'goods_instock':  goods_instock,
+            'deductible':     commission,
+            'amount':         payout,
         })
 
     # ── PDF layout constants ──────────────────────────────────────────────────
@@ -1322,178 +1342,131 @@ def admin_print_checks():
         top_y = CHECK_TOP
         bot_y = STUB1_TOP
 
-        # Border
-        c.setStrokeColor(rl_colors.black)
-        c.setLineWidth(0.75)
-        c.rect(MARGIN, bot_y + 2, W - 2 * MARGIN, SECTION_H - 4)
-
-        # Org name & address (top-left)
-        c.setFont('Helvetica-Bold', 12)
-        c.drawString(L, top_y - 20, ORG_NAME)
-        c.setFont('Helvetica', 9)
-        c.drawString(L, top_y - 33, ORG_ADDR1)
-        c.drawString(L, top_y - 44, ORG_ADDR2)
-
-        # Check number & date (top-right)
-        c.setFont('Helvetica-Bold', 10)
-        c.drawRightString(R, top_y - 20, f'No. {data["check_num"]}')
-        c.setFont('Helvetica', 9)
-        c.drawRightString(R, top_y - 33, f'Date:  {today_str}')
-
-        # Dividing rule
-        c.setLineWidth(0.5)
-        c.line(L, top_y - 56, R, top_y - 56)
-
-        # "PAY TO THE ORDER OF" label
-        c.setFont('Helvetica', 8)
-        c.drawString(L, top_y - 74, 'PAY TO THE ORDER OF:')
-
-        # Payee name
-        c.setFont('Helvetica-Bold', 14)
-        c.drawString(L, top_y - 92, data['name'])
-
-        # Payee address
-        c.setFont('Helvetica', 8)
-        if data['addr1']:
-            c.drawString(L, top_y - 104, data['addr1'])
-        if data['addr2']:
-            c.drawString(L, top_y - 115, data['addr2'])
-
-        # Amount box (right side, aligned with payee name)
-        box_w = 1.35 * inch
-        box_x = R - box_w
-        c.setLineWidth(1)
-        c.rect(box_x, top_y - 97, box_w, 26)
-        c.setFont('Helvetica-Bold', 14)
-        c.drawCentredString(box_x + box_w / 2, top_y - 88, f'${data["amount"]:,.2f}')
-
-        # Underline from payee to amount box
-        c.setLineWidth(0.5)
-        c.line(L, top_y - 120, box_x - 6, top_y - 120)
-
-        # Amount in words
-        words   = _amount_to_words(data['amount'])
-        words_y = top_y - 140
+        # Date — top right
         c.setFont('Helvetica', 10)
-        c.drawString(L, words_y, words)
-        text_w = c.stringWidth(words, 'Helvetica', 10)
-        c.line(L + text_w + 4, words_y + 3, R - 55, words_y + 3)
-        c.setFont('Helvetica-Bold', 10)
-        c.drawRightString(R, words_y, 'DOLLARS')
+        c.drawRightString(R, top_y - 20, date.today().strftime('%-m/%-d/%Y'))
 
-        # Memo & signature
-        memo_y = top_y - 184
-        c.setFont('Helvetica', 9)
-        c.drawString(L, memo_y, 'MEMO:  Ski Sale Consignment Payout')
-        sig_x = R - 1.9 * inch
-        c.setLineWidth(0.5)
-        c.line(sig_x, memo_y, R, memo_y)
-        c.setFont('Helvetica', 8)
-        c.drawCentredString(sig_x + 0.95 * inch, memo_y - 11, 'Authorized Signature')
-
-        # MICR placeholder
-        c.setFont('Helvetica', 8)
-        c.setFillColor(rl_colors.HexColor('#888888'))
-        c.drawString(L, bot_y + 14,
-                     f'\u2446 ROUTING NUMBER \u2446  ACCOUNT NUMBER \u2447  {data["check_num"]}')
-        c.setFillColor(rl_colors.black)
-
-        # Dashed cut line at bottom of check
-        dashed_cut_line(c, bot_y)
-
-    # ── Draw a stub (middle or bottom third) ──────────────────────────────────
-    def draw_stub(c, top_y, data, label):
-        bot_y = top_y - SECTION_H
-        MID   = W / 2   # center column divider
-
-        # Light border
-        c.setStrokeColor(rl_colors.HexColor('#aaaaaa'))
-        c.setLineWidth(0.5)
-        c.rect(MARGIN, bot_y + 2, W - 2 * MARGIN, SECTION_H - 4)
-        c.setStrokeColor(rl_colors.black)
-
-        # Header band
-        c.setFillColor(rl_colors.HexColor('#1e3c72'))
-        c.rect(MARGIN, top_y - 26, W - 2 * MARGIN, 22, fill=1, stroke=0)
-        c.setFillColor(rl_colors.white)
-        c.setFont('Helvetica-Bold', 10)
-        c.drawString(L, top_y - 18, f'{ORG_NAME}  —  {label}')
-        c.drawRightString(R, top_y - 18, f'Check No. {data["check_num"]}  |  {today_str}')
-        c.setFillColor(rl_colors.black)
-
-        # Consignor name (large)
-        c.setFont('Helvetica-Bold', 13)
-        c.drawString(L, top_y - 46, data['name'])
-        if data['addr1']:
-            c.setFont('Helvetica', 9)
-            c.drawString(L, top_y - 58, data['addr1'])
-        if data['addr2']:
-            c.drawString(L, top_y - 69, data['addr2'])
-
-        # Vertical divider between left narrative and right summary
-        c.setLineWidth(0.5)
-        c.setStrokeColor(rl_colors.HexColor('#cccccc'))
-        c.line(MID, top_y - 32, MID, bot_y + 10)
-        c.setStrokeColor(rl_colors.black)
-
-        # ── Left column: line-item breakdown ──────────────────────────────
-        lx  = L
-        row_y = top_y - 88
-        row_h = 16
-
-        def stub_row(label_text, value_text, bold=False, y=None):
-            nonlocal row_y
-            ty = y if y is not None else row_y
-            font = 'Helvetica-Bold' if bold else 'Helvetica'
-            c.setFont(font, 9)
-            c.drawString(lx, ty, label_text)
-            c.drawRightString(MID - 10, ty, value_text)
-            if y is None:
-                row_y -= row_h
-
-        stub_row('Items Consigned:',  str(data['items_consigned']))
-        stub_row('Items Sold:',        str(data['items_sold']))
-        stub_row('',                   '')       # spacer
-        stub_row('Total Sold Price:',  f'${data["sold_price"]:,.2f}')
-        stub_row(f'Commission ({data["commission_rate"]:.0%}):',
-                              f'- ${data["commission"]:,.2f}')
-
-        # Divider above payout
-        c.setLineWidth(0.5)
-        c.line(lx, row_y + row_h - 2, MID - 10, row_y + row_h - 2)
-
-        stub_row('NET PAYOUT:', f'${data["amount"]:,.2f}', bold=True)
-
-        # ── Right column: amount box ───────────────────────────────────────
-        rx       = MID + 10
-        center_x = (MID + W - MARGIN) / 2
-        box_w    = 1.5 * inch
-        box_h    = 0.5 * inch
-        box_x    = center_x - box_w / 2
-        box_y    = top_y - 120
-
-        c.setFont('Helvetica', 8)
-        c.drawCentredString(center_x, top_y - 46, 'Consignor ID:')
+        # Payee name (left) and amount (right)
         c.setFont('Helvetica-Bold', 12)
-        c.drawCentredString(center_x, top_y - 58, f'#{data["vendor_id"]}')
+        c.drawString(L, top_y - 46, data['name'])
+        c.drawRightString(R, top_y - 46, f'${data["amount"]:,.2f}')
 
+        # Amount in words with asterisk fill to right margin
+        words  = _amount_to_words(data['amount'])
+        c.setFont('Helvetica', 10)
+        words_w = c.stringWidth(words + ' ', 'Helvetica', 10)
+        star_w  = c.stringWidth('*', 'Helvetica', 10)
+        n_stars = max(0, int(((R - L) - words_w) / star_w))
+        c.drawString(L, top_y - 62, words + ' ' + '*' * n_stars)
+
+        # Address block — indented, positioned for window envelope
+        ax = L + 48
+        ay = top_y - 128
+        c.setFont('Helvetica', 11)
+        c.drawString(ax, ay, data['name'])
+        if data['addr1']:
+            c.drawString(ax, ay - 16, data['addr1'])
+        if data['addr2']:
+            c.drawString(ax, ay - 32, data['addr2'])
+
+        # 501-C3 note — bottom right of check section
         c.setFont('Helvetica', 8)
-        c.drawCentredString(center_x, box_y + box_h + 8, 'CHECK AMOUNT')
-        c.setLineWidth(1.5)
-        c.setStrokeColor(rl_colors.HexColor('#1e3c72'))
-        c.rect(box_x, box_y, box_w, box_h)
-        c.setStrokeColor(rl_colors.black)
-        c.setFont('Helvetica-Bold', 16)
-        c.drawCentredString(center_x, box_y + 14, f'${data["amount"]:,.2f}')
+        c.drawRightString(R, bot_y + 38, '(operating under the 501-C3 authority of:')
+        c.drawRightString(R, bot_y + 26, 'National Ski Patrol, Central Division)')
 
-        c.setFont('Helvetica', 8)
-        c.setFillColor(rl_colors.HexColor('#555555'))
-        c.drawCentredString(center_x, box_y - 12,
-                            _amount_to_words(data['amount']))
-        c.setFillColor(rl_colors.black)
-
-        # Dashed cut line at bottom of stub
         dashed_cut_line(c, bot_y)
+
+    # ── Draw middle stub ───────────────────────────────────────────────────────
+    def draw_stub(c, top_y, data):
+        bot_y = top_y - SECTION_H
+        mid_x = W / 2
+
+        # Title box
+        title_h = 40
+        c.setLineWidth(2)
+        c.setStrokeColor(rl_colors.black)
+        c.rect(L, top_y - title_h - 2, R - L, title_h)
+        c.setFont('Helvetica-Bold', 16)
+        event_title = f'Mt. Brighton Annual Ski Swap Fund Raiser  {date.today().year}'
+        c.drawCentredString((L + R) / 2, top_y - title_h + 10, event_title)
+
+        # Vendor info grid
+        gy = top_y - title_h - 18
+        c.setFont('Helvetica', 9)
+        c.drawString(L, gy, 'Vendor#:')
+        c.drawString(L + 52, gy, str(data['vendor_id']))
+        c.drawString(L + 76, gy, 'Name:')
+        c.setFont('Helvetica-Bold', 9)
+        c.drawString(L + 106, gy, data['name'])
+
+        # Address + phone
+        c.setFont('Helvetica', 9)
+        if data['addr1']:
+            c.drawString(L + 106, gy - 13, data['addr1'])
+        if data['phone']:
+            c.drawRightString(R, gy - 13, f'Phone #:  {data["phone"]}')
+
+        # Check amt + city/state/zip
+        c.drawString(L, gy - 26, 'Check Amt:')
+        c.setFont('Helvetica-Bold', 9)
+        c.drawString(L + 62, gy - 26, f'${data["amount"]:,.2f}')
+        c.setFont('Helvetica', 9)
+        city_str = '  '.join(p for p in [data['city'], data['state']] if p)
+        c.drawString(L + 140, gy - 26, city_str)
+        if data['zip_code']:
+            c.drawString(L + 240, gy - 26, 'ZIP:')
+            c.drawString(L + 262, gy - 26, data['zip_code'])
+
+        # Financial data rows
+        table_y = gy - 48
+        row_h   = 15
+        val_x   = mid_x - 10
+        rows = [
+            ('Value Of Goods Received:',      data['goods_received']),
+            ('Value Of Goods Sold:',           data['goods_sold']),
+            ('Deductible Sales Value:',        data['deductible']),
+            ('Value Of Goods Donated:',        data['goods_donated']),
+            ('Value Of Goods Returned:',       data['goods_returned']),
+            ('Value Of Goods still In-Stock:', data['goods_instock']),
+        ]
+        for i, (label, value) in enumerate(rows):
+            y = table_y - i * row_h
+            c.setFont('Helvetica', 9)
+            c.drawString(L + 4, y, label)
+            c.drawRightString(val_x, y, f'${value:,.2f}')
+
+        # 501-C3 note — right column alongside rows 3-4
+        note_x = mid_x + 8
+        note_y = table_y - 2 * row_h
+        c.setFont('Helvetica', 8)
+        c.drawString(note_x, note_y,      '(operating under the 501-C3 authority of:')
+        c.setFont('Helvetica-Bold', 8)
+        c.drawString(note_x, note_y - 12, 'National Ski Patrol, Central Division)')
+
+        # Divider below table
+        div_y = table_y - len(rows) * row_h - 6
+        c.setLineWidth(1)
+        c.line(L, div_y, R, div_y)
+
+        dashed_cut_line(c, bot_y)
+
+    # ── Draw bottom stub ───────────────────────────────────────────────────────
+    def draw_bottom_stub(c, top_y, data):
+        bot_y = top_y - SECTION_H
+
+        # Address block — indented
+        ax = L + 48
+        ay = top_y - 60
+        c.setFont('Helvetica', 11)
+        c.drawString(ax, ay, data['name'])
+        if data['addr1']:
+            c.drawString(ax, ay - 16, data['addr1'])
+        if data['addr2']:
+            c.drawString(ax, ay - 32, data['addr2'])
+
+        # Long date at bottom left
+        c.setFont('Helvetica', 10)
+        c.drawString(L, bot_y + 18, date.today().strftime('%A, %B %-d, %Y'))
 
     # ── Build PDF ─────────────────────────────────────────────────────────────
     buf = io.BytesIO()
@@ -1501,8 +1474,8 @@ def admin_print_checks():
 
     for data in payees:
         draw_check(c, data)
-        draw_stub(c, STUB1_TOP, data, 'Consignor Copy 1')
-        draw_stub(c, STUB2_TOP, data, 'Consignor Copy 2')
+        draw_stub(c, STUB1_TOP, data)
+        draw_bottom_stub(c, STUB2_TOP, data)
         c.showPage()
 
     c.save()

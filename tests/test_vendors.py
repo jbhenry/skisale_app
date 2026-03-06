@@ -10,12 +10,12 @@ class TestVendorList:
         assert response.status_code == 200
         assert b'Jane' in response.data
 
-    def test_list_hides_inactive_by_default(self, client, db, sample_vendor):
+    def test_list_shows_inactive_by_default(self, client, db, sample_vendor):
         sample_vendor.active = False
         db.session.commit()
 
         response = client.get('/vendors')
-        assert b'Jane' not in response.data
+        assert b'Jane' in response.data
 
     def test_list_shows_inactive_when_requested(self, client, db, sample_vendor):
         sample_vendor.active = False
