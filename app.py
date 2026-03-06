@@ -162,7 +162,7 @@ def vendors_list():
     # If it's present (even as empty), user unchecked it, so set to false
     active_only = request.args.get('active_only', None)
     if active_only is None:
-        active_only = True  # Default to showing only active
+        active_only = False  # Default to showing all vendors
     else:
         active_only = active_only == 'true'
     
