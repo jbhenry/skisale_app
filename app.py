@@ -427,7 +427,7 @@ def vendor_checkin(vendor_id):
     vendor = db.get_or_404(Vendor, vendor_id)
 
     # Items still awaiting check-in (owned by this vendor, not yet in stock)
-    CHECKIN_STATUSES = ['Not In Stock', 'Returned to Vendor']
+    CHECKIN_STATUSES = ['Not In Stock']
     pending_items = (Inventory.query
                      .filter_by(vendor_id=vendor.id)
                      .filter(Inventory.status.in_(CHECKIN_STATUSES))
