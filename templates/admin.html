@@ -20,16 +20,6 @@
             <div class="card-body">
                 <p class="text-muted">Pre-sale configuration and setup tasks.</p>
                 <div class="list-group list-group-flush">
-                    <form method="POST" action="{{ url_for('admin_backup_db') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-0">
-                        <button type="submit" class="btn w-100 text-start d-flex align-items-center gap-3 p-3 border-0 bg-transparent">
-                            <i class="bi bi-cloud-arrow-down fs-4 text-primary"></i>
-                            <div>
-                                <strong>Backup Database</strong>
-                                <div class="text-muted small">Save a timestamped copy of the database to the <code>backups/</code> folder. Safe to run at any time during the sale.</div>
-                            </div>
-                            <i class="bi bi-save ms-auto text-muted"></i>
-                        </button>
-                    </form>
                     <button type="button"
                             class="list-group-item list-group-item-action d-flex align-items-center gap-3"
                             data-bs-toggle="modal" data-bs-target="#initDbModal">
@@ -73,6 +63,37 @@
             </div>
         </div>
 
+        <!-- Daily Tasks Section -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Daily Tasks</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Day-to-day operational tasks during the sale.</p>
+                <div class="list-group list-group-flush">
+                    <form method="POST" action="{{ url_for('admin_backup_db') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-0">
+                        <button type="submit" class="btn w-100 text-start d-flex align-items-center gap-3 p-3 border-0 bg-transparent">
+                            <i class="bi bi-cloud-arrow-down fs-4 text-primary"></i>
+                            <div>
+                                <strong>Backup Database</strong>
+                                <div class="text-muted small">Save a timestamped copy of the database to the <code>backups/</code> folder. Safe to run at any time during the sale.</div>
+                            </div>
+                            <i class="bi bi-save ms-auto text-muted"></i>
+                        </button>
+                    </form>
+                    <a href="{{ url_for('admin_export_inventory_csv') }}"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <i class="bi bi-filetype-csv fs-4 text-primary"></i>
+                        <div>
+                            <strong>Export All Inventory (CSV)</strong>
+                            <div class="text-muted small">Download a .csv of all inventory items — vendor ID, SKU, equipment type, description, price, and status.</div>
+                        </div>
+                        <i class="bi bi-download ms-auto text-muted"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
         <!-- Close-Out Section -->
         <div class="card mb-4">
             <div class="card-header bg-dark text-white">
@@ -81,24 +102,6 @@
             <div class="card-body">
                 <p class="text-muted">End-of-sale reports and close-out tasks.</p>
                 <div class="list-group list-group-flush">
-                    <a href="{{ url_for('admin_payout_report') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
-                        <i class="bi bi-file-earmark-spreadsheet fs-4 text-success"></i>
-                        <div>
-                            <strong>Payout Report</strong>
-                            <div class="text-muted small">Download an .xlsx spreadsheet listing every consignor check to be written — items consigned, items sold, commission withheld, and net payout.</div>
-                        </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin_print_checks') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
-                        <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
-                        <div>
-                            <strong>Print Checks</strong>
-                            <div class="text-muted small">Download a print-ready PDF of vendor payout checks, 3-up per page. Print on blank check stock.</div>
-                        </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
                     <a href="{{ url_for('admin_report_instock') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-warning"></i>
@@ -123,6 +126,24 @@
                         <div>
                             <strong>Sales Tax Report</strong>
                             <div class="text-muted small">Download an .xlsx list of sales tax collected — one line per invoice with totals.</div>
+                        </div>
+                        <i class="bi bi-download ms-auto text-muted"></i>
+                    </a>
+                    <a href="{{ url_for('admin_payout_report') }}"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-spreadsheet fs-4 text-success"></i>
+                        <div>
+                            <strong>Payout Report</strong>
+                            <div class="text-muted small">Download an .xlsx spreadsheet listing every consignor check to be written — items consigned, items sold, commission withheld, and net payout.</div>
+                        </div>
+                        <i class="bi bi-download ms-auto text-muted"></i>
+                    </a>
+                    <a href="{{ url_for('admin_print_checks') }}"
+                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
+                        <div>
+                            <strong>Print Checks</strong>
+                            <div class="text-muted small">Download a print-ready PDF of vendor payout checks, 3-up per page. Print on blank check stock.</div>
                         </div>
                         <i class="bi bi-download ms-auto text-muted"></i>
                     </a>

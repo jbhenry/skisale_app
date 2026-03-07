@@ -1112,6 +1112,31 @@ def admin_report_instock():
     return _xlsx_response(wb, f'instock_report_{date.today().isoformat()}.xlsx')
 
 
+@app.route('/admin/export-inventory-csv')
+def admin_export_inventory_csv():
+    """Download a CSV of all inventory items."""
+    import csv, io
+    items = Inventory.query.order_by(Inventory.vendor_id, Inventory.sku).all()
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(['Vendor ID', 'SKU', 'Equipment Type', 'Description', 'Price', 'Status'])
+    for item in items:
+        writer.writerow([
+            item.vendor_id,
+            item.sku,
+            item.equipment_type,
+            item.description or '',
+            f'{item.price:.2f}',
+            item.status,
+        ])
+    filename = f'inventory_{date.today().isoformat()}.csv'
+    return Response(
+        buf.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+
 @app.route('/admin/report-donated')
 def admin_report_donated():
     """Download xlsx of all inventory items marked Donated."""
