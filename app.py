@@ -1119,14 +1119,13 @@ def admin_export_inventory_csv():
     items = Inventory.query.order_by(Inventory.vendor_id, Inventory.sku).all()
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(['Vendor ID', 'SKU', 'Equipment Type', 'Description', 'Price', 'Status'])
+    writer.writerow(['Vendor ID', 'SKU', 'Equipment Type', 'Description', 'Status'])
     for item in items:
         writer.writerow([
             item.vendor_id,
             item.sku,
             item.equipment_type,
             item.description or '',
-            f'{item.price:.2f}',
             item.status,
         ])
     filename = f'inventory_{date.today().isoformat()}.csv'
