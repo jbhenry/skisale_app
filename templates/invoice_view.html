@@ -36,7 +36,7 @@
                 <div class="row">
                     <div class="col-md-6">
                         <p><strong>Invoice #:</strong> {{ invoice.id }}</p>
-                        <p><strong>Date:</strong> {{ invoice.invoice_date.strftime('%B %d, %Y at %I:%M %p') }}</p>
+                        <p><strong>Date:</strong> {{ (invoice.invoice_date | localtime).strftime('%B %d, %Y at %I:%M %p') }}</p>
                         <p><strong>Customer:</strong> {{ invoice.customer_name or 'Walk-in Customer' }}</p>
                     </div>
                     <div class="col-md-6">

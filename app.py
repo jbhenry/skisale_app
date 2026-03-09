@@ -12,7 +12,10 @@ import sqlite3
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from datetime import date, datetime
+from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo
+
+EASTERN = ZoneInfo('America/New_York')
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.pagesizes import letter as rl_letter
 from reportlab.lib.units import inch
@@ -24,6 +27,15 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///skisale.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
+
+@app.template_filter('localtime')
+def to_eastern(dt):
+    """Convert a naive UTC datetime to US Eastern time."""
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(EASTERN)
 
 # Equipment types and statuses
 EQUIPMENT_TYPES = [
@@ -292,7 +304,6 @@ def vendor_view(vendor_id):
 @app.route('/vendors/<int:vendor_id>/receipt')
 def vendor_receipt(vendor_id):
     """Print a check-in receipt listing all inventory for a vendor."""
-    from datetime import datetime, timezone
     vendor = db.get_or_404(Vendor, vendor_id)
     checkedin_items = (Inventory.query
                        .filter_by(vendor_id=vendor.id)
@@ -300,12 +311,11 @@ def vendor_receipt(vendor_id):
                        .all())
     return render_template('vendor_receipt.html', vendor=vendor,
                            checkedin_items=checkedin_items,
-                           now=datetime.now(timezone.utc))
+                           now=datetime.now(EASTERN))
 
 @app.route('/vendors/<int:vendor_id>/checkout-receipt')
 def vendor_checkout_receipt(vendor_id):
     """Print a checkout/payout receipt for a vendor."""
-    from datetime import datetime, timezone
     vendor = db.get_or_404(Vendor, vendor_id)
     items = (Inventory.query
              .filter_by(vendor_id=vendor.id)
@@ -320,7 +330,7 @@ def vendor_checkout_receipt(vendor_id):
                            total_sales=total_sales,
                            commission_amt=commission_amt,
                            payout_amt=payout_amt,
-                           now=datetime.now(timezone.utc))
+                           now=datetime.now(EASTERN))
 
 @app.route('/vendors/<int:vendor_id>/import', methods=['GET', 'POST'])
 def vendor_import_csv(vendor_id):

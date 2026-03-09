@@ -260,9 +260,9 @@
             <div class="card-body">
                 <small class="text-muted">
                     <i class="bi bi-clock-history"></i>
-                    Created: {{ vendor.created_at.strftime('%B %d, %Y at %I:%M %p') if vendor.created_at else 'Unknown' }}
+                    Created: {{ (vendor.created_at | localtime).strftime('%B %d, %Y at %I:%M %p') if vendor.created_at else 'Unknown' }}
                     {% if vendor.updated_at and vendor.updated_at != vendor.created_at %}
-                    <br>Last updated: {{ vendor.updated_at.strftime('%B %d, %Y at %I:%M %p') }}
+                    <br>Last updated: {{ (vendor.updated_at | localtime).strftime('%B %d, %Y at %I:%M %p') }}
                     {% endif %}
                 </small>
             </div>

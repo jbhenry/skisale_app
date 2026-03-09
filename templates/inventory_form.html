@@ -154,9 +154,9 @@
         {% if item %}
         <div class="mt-3 text-muted">
             <small>
-                Created: {{ item.created_at.strftime('%Y-%m-%d %I:%M %p') if item.created_at else 'N/A' }}
+                Created: {{ (item.created_at | localtime).strftime('%Y-%m-%d %I:%M %p') if item.created_at else 'N/A' }}
                 {% if item.updated_at %}
-                | Last updated: {{ item.updated_at.strftime('%Y-%m-%d %I:%M %p') }}
+                | Last updated: {{ (item.updated_at | localtime).strftime('%Y-%m-%d %I:%M %p') }}
                 {% endif %}
             </small>
         </div>

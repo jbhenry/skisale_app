@@ -120,7 +120,7 @@
 
     <div class="receipt-info">
         <p><strong>Invoice #:</strong> {{ invoice.id }}</p>
-        <p><strong>Date:</strong> {{ invoice.invoice_date.strftime('%Y-%m-%d %I:%M %p') }}</p>
+        <p><strong>Date:</strong> {{ (invoice.invoice_date | localtime).strftime('%Y-%m-%d %I:%M %p') }}</p>
         {% if invoice.customer_name %}
         <p><strong>Customer:</strong> {{ invoice.customer_name }}</p>
         {% endif %}

@@ -171,9 +171,9 @@
         {% if vendor %}
         <div class="mt-3 text-muted">
             <small>
-                Created: {{ vendor.created_at.strftime('%Y-%m-%d %I:%M %p') if vendor.created_at else 'N/A' }}
+                Created: {{ (vendor.created_at | localtime).strftime('%Y-%m-%d %I:%M %p') if vendor.created_at else 'N/A' }}
                 {% if vendor.updated_at %}
-                | Last updated: {{ vendor.updated_at.strftime('%Y-%m-%d %I:%M %p') }}
+                | Last updated: {{ (vendor.updated_at | localtime).strftime('%Y-%m-%d %I:%M %p') }}
                 {% endif %}
             </small>
         </div>

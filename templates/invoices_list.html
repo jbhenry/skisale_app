@@ -42,7 +42,7 @@
                                 <strong>#{{ invoice.id }}</strong>
                             </a>
                         </td>
-                        <td>{{ invoice.invoice_date.strftime('%Y-%m-%d %I:%M %p') }}</td>
+                        <td>{{ (invoice.invoice_date | localtime).strftime('%Y-%m-%d %I:%M %p') }}</td>
                         <td>{{ invoice.customer_name or '—' }}</td>
                         <td>{{ invoice.lines|length }} item(s)</td>
                         <td>${{ "%.2f"|format(invoice.subtotal) }}</td>
