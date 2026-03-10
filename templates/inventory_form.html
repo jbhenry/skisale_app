@@ -64,8 +64,11 @@
                             </label>
                             <select class="form-select" id="equipment_type" name="equipment_type" required>
                                 <option value="">--Select Type--</option>
+                                {% if item and item.equipment_type and item.equipment_type not in equipment_types %}
+                                <option value="{{ item.equipment_type }}" selected>{{ item.equipment_type }}</option>
+                                {% endif %}
                                 {% for eq_type in equipment_types %}
-                                <option value="{{ eq_type }}" 
+                                <option value="{{ eq_type }}"
                                         {% if item and item.equipment_type == eq_type %}selected{% endif %}>
                                     {{ eq_type }}
                                 </option>
