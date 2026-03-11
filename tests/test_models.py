@@ -85,3 +85,82 @@ class TestInvoiceModel:
 
 
 import pytest
+
+
+class TestInvoiceSurchargeModel:
+    def test_credit_card_applies_surcharge(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_invoice.payment_method = 'Credit Card'
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        # 3% surcharge on $100 = $3.00
+        assert sample_invoice.surcharge_rate == pytest.approx(0.03)
+        assert sample_invoice.surcharge_amount == pytest.approx(3.00)
+        assert sample_invoice.total == pytest.approx(109.00)  # 100 + 6 tax + 3 surcharge
+
+    def test_venmo_applies_surcharge(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_invoice.payment_method = 'Venmo'
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        assert sample_invoice.surcharge_rate == pytest.approx(0.03)
+        assert sample_invoice.surcharge_amount == pytest.approx(3.00)
+
+    def test_cash_no_surcharge(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_invoice.payment_method = 'Cash'
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        assert sample_invoice.surcharge_rate == 0.0
+        assert sample_invoice.surcharge_amount == 0.0
+        assert sample_invoice.total == pytest.approx(106.00)  # 100 + 6 tax
+
+    def test_check_no_surcharge(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_invoice.payment_method = 'Check'
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        assert sample_invoice.surcharge_rate == 0.0
+        assert sample_invoice.surcharge_amount == 0.0
+
+    def test_surcharge_excluded_from_tax_base(self, db, sample_vendor, sample_item, sample_invoice):
+        """Tax is calculated on subtotal only, not on the surcharge amount."""
+        sample_invoice.payment_method = 'Credit Card'
+        sample_invoice.tax_rate = 0.10  # 10% for easy math
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        # tax = 100 * 0.10 = 10, surcharge = 100 * 0.03 = 3, total = 113
+        assert sample_invoice.tax_amount == pytest.approx(10.00)
+        assert sample_invoice.surcharge_amount == pytest.approx(3.00)
+        assert sample_invoice.total == pytest.approx(113.00)

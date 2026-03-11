@@ -349,3 +349,130 @@ class TestPrintChecks:
         response = client.get('/admin/print-checks')
         assert response.status_code == 200
         assert response.data[:4] == b'%PDF'
+
+
+# ---------------------------------------------------------------------------
+# Admin dashboard  (/admin)
+# ---------------------------------------------------------------------------
+
+class TestAdminPage:
+
+    def test_admin_page_returns_200(self, client):
+        response = client.get('/admin')
+        assert response.status_code == 200
+
+    def test_admin_page_post_not_allowed(self, client):
+        response = client.post('/admin')
+        assert response.status_code == 405
+
+
+# ---------------------------------------------------------------------------
+# Inventory CSV Export  (/admin/export-inventory-csv)
+# ---------------------------------------------------------------------------
+
+class TestInventoryCsvExport:
+
+    def test_returns_csv_mime_type(self, client, full_db):
+        response = client.get('/admin/export-inventory-csv')
+        assert response.status_code == 200
+        assert 'text/csv' in response.content_type
+
+    def test_filename_contains_date(self, client, full_db):
+        cd = client.get('/admin/export-inventory-csv').headers['Content-Disposition']
+        assert date.today().isoformat() in cd
+        assert 'inventory_' in cd
+
+    def test_header_row(self, client, full_db):
+        response = client.get('/admin/export-inventory-csv')
+        text = response.data.decode('utf-8')
+        first_line = text.splitlines()[0]
+        assert 'Vendor ID' in first_line
+        assert 'SKU' in first_line
+        assert 'Equipment Type' in first_line
+        assert 'Status' in first_line
+
+    def test_all_items_included(self, client, full_db):
+        response = client.get('/admin/export-inventory-csv')
+        text = response.data.decode('utf-8')
+        lines = [l for l in text.splitlines() if l.strip()]
+        # 1 header + 6 items from full_db
+        assert len(lines) == 7
+
+    def test_correct_item_data(self, client, full_db):
+        response = client.get('/admin/export-inventory-csv')
+        text = response.data.decode('utf-8')
+        assert '2000001' in text   # SKU of item1
+        assert 'Skis' in text
+        assert 'Sold' in text
+
+    def test_empty_db_returns_header_only(self, client, db):
+        response = client.get('/admin/export-inventory-csv')
+        assert response.status_code == 200
+        text = response.data.decode('utf-8')
+        lines = [l for l in text.splitlines() if l.strip()]
+        assert len(lines) == 1  # header only
+
+
+# ---------------------------------------------------------------------------
+# Sales Tax Report  (/admin/report-salestax)
+# ---------------------------------------------------------------------------
+
+class TestSalesTaxReport:
+
+    def test_returns_xlsx(self, client, full_db):
+        response = client.get('/admin/report-salestax')
+        assert response.status_code == 200
+        assert response.content_type == XLSX_MIME
+
+    def test_filename_contains_date(self, client, full_db):
+        cd = client.get('/admin/report-salestax').headers['Content-Disposition']
+        assert date.today().isoformat() in cd
+        assert 'salestax_report' in cd
+
+    def test_header_row(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/report-salestax'))
+        headers = [cell.value for cell in wb.active[2]]
+        assert 'Invoice #'      in headers
+        assert 'Customer'       in headers
+        assert 'Tax Collected'  in headers
+        assert 'Total'          in headers
+        assert 'Subtotal'       in headers
+
+    def test_one_row_per_invoice(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/report-salestax'))
+        data = [r for r in rows(wb.active)
+                if r[0] is not None and isinstance(r[0], int)]
+        assert len(data) == 1  # full_db has one invoice
+
+    def test_correct_amounts(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/report-salestax'))
+        ws = wb.active
+        # Row 3 = first data row; col 5=Subtotal, col 7=Tax, col 8=Total
+        assert ws.cell(3, 5).value == pytest.approx(300.00)
+        assert ws.cell(3, 7).value == pytest.approx(18.00)
+        assert ws.cell(3, 8).value == pytest.approx(318.00)
+
+    def test_empty_db_returns_200(self, client, db):
+        response = client.get('/admin/report-salestax')
+        assert response.status_code == 200
+        assert response.content_type == XLSX_MIME
+
+
+# ---------------------------------------------------------------------------
+# Database Backup  (/admin/backup-db)
+# ---------------------------------------------------------------------------
+
+class TestBackupDb:
+
+    def test_post_redirects_to_admin(self, client):
+        response = client.post('/admin/backup-db')
+        assert response.status_code == 302
+        assert '/admin' in response.headers['Location']
+
+    def test_get_not_allowed(self, client):
+        response = client.get('/admin/backup-db')
+        assert response.status_code == 405
+
+    def test_post_follows_redirect_to_admin(self, client):
+        response = client.post('/admin/backup-db', follow_redirects=True)
+        assert response.status_code == 200

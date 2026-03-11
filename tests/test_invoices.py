@@ -186,6 +186,182 @@ class TestInvoiceDelete:
         assert sample_item.status == 'In-Stock'
 
 
+class TestInvoiceList:
+    def test_invoice_list_returns_200(self, client):
+        response = client.get('/invoices')
+        assert response.status_code == 200
+
+    def test_invoice_list_shows_invoices(self, client, sample_invoice):
+        response = client.get('/invoices')
+        assert response.status_code == 200
+        assert b'Bob Smith' in response.data
+
+    def test_invoice_list_empty_db(self, client, db):
+        response = client.get('/invoices')
+        assert response.status_code == 200
+
+
+class TestInvoiceView:
+    def test_view_invoice_returns_200(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}')
+        assert response.status_code == 200
+
+    def test_view_invoice_shows_customer_name(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}')
+        assert b'Bob Smith' in response.data
+
+    def test_view_nonexistent_invoice_returns_404(self, client):
+        response = client.get('/invoices/9999')
+        assert response.status_code == 404
+
+    def test_view_invoice_returns_mode(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}?returns=1')
+        assert response.status_code == 200
+
+
+class TestInvoiceReceipt:
+    def test_receipt_returns_200(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/receipt')
+        assert response.status_code == 200
+
+    def test_receipt_shows_customer_name(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/receipt')
+        assert b'Bob Smith' in response.data
+
+    def test_receipt_404_for_missing_invoice(self, client):
+        response = client.get('/invoices/9999/receipt')
+        assert response.status_code == 404
+
+
+class TestInvoiceReturnItem:
+    def test_return_item_sets_in_stock(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Sold'
+        db.session.commit()
+
+        response = client.post(f'/invoices/{sample_invoice.id}/return_item', data={
+            'line_id': line.id,
+        })
+        assert response.status_code == 302
+        db.session.refresh(sample_item)
+        assert sample_item.status == 'In-Stock'
+
+    def test_return_item_removes_invoice_line(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Sold'
+        db.session.commit()
+        line_id = line.id
+
+        client.post(f'/invoices/{sample_invoice.id}/return_item', data={'line_id': line_id})
+        assert db.session.get(InvoiceLine, line_id) is None
+
+    def test_return_item_redirects_to_invoice_view(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Sold'
+        db.session.commit()
+
+        response = client.post(f'/invoices/{sample_invoice.id}/return_item', data={
+            'line_id': line.id,
+        })
+        assert f'/invoices/{sample_invoice.id}' in response.location
+
+
+class TestInvoiceSurcharge:
+    def test_credit_card_adds_surcharge(self, client, db, sample_item):
+        # Create an invoice with Credit Card payment
+        response = client.post('/invoices/new', data={
+            'customer_name': 'CC Buyer',
+            'tax_rate': '0',
+            'payment_method': 'Credit Card',
+        }, follow_redirects=True)
+        assert response.status_code == 200
+
+        invoice = Invoice.query.filter_by(customer_name='CC Buyer').first()
+        assert invoice is not None
+
+        # Add the item
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'add_item',
+            'sku': sample_item.sku,
+        })
+
+        db.session.refresh(invoice)
+        # 3% surcharge on $150 = $4.50
+        assert invoice.surcharge_rate == pytest.approx(0.03)
+        assert invoice.surcharge_amount == pytest.approx(4.50)
+        assert invoice.total == pytest.approx(154.50)
+
+    def test_venmo_adds_surcharge(self, client, db, sample_item):
+        response = client.post('/invoices/new', data={
+            'customer_name': 'Venmo Buyer',
+            'tax_rate': '0',
+            'payment_method': 'Venmo',
+        }, follow_redirects=True)
+        assert response.status_code == 200
+
+        invoice = Invoice.query.filter_by(customer_name='Venmo Buyer').first()
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'add_item',
+            'sku': sample_item.sku,
+        })
+
+        db.session.refresh(invoice)
+        assert invoice.surcharge_rate == pytest.approx(0.03)
+        assert invoice.surcharge_amount == pytest.approx(4.50)
+
+    def test_cash_no_surcharge(self, client, db, sample_item):
+        response = client.post('/invoices/new', data={
+            'customer_name': 'Cash Buyer',
+            'tax_rate': '0',
+            'payment_method': 'Cash',
+        }, follow_redirects=True)
+        assert response.status_code == 200
+
+        invoice = Invoice.query.filter_by(customer_name='Cash Buyer').first()
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'add_item',
+            'sku': sample_item.sku,
+        })
+
+        db.session.refresh(invoice)
+        assert invoice.surcharge_rate == 0.0
+        assert invoice.surcharge_amount == 0.0
+        assert invoice.total == pytest.approx(150.00)
+
+    def test_check_no_surcharge(self, client, db, sample_item):
+        response = client.post('/invoices/new', data={
+            'customer_name': 'Check Buyer',
+            'tax_rate': '0',
+            'payment_method': 'Check',
+        }, follow_redirects=True)
+        assert response.status_code == 200
+
+        invoice = Invoice.query.filter_by(customer_name='Check Buyer').first()
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'add_item',
+            'sku': sample_item.sku,
+        })
+
+        db.session.refresh(invoice)
+        assert invoice.surcharge_rate == 0.0
+        assert invoice.surcharge_amount == 0.0
+
+
 class TestDashboard:
     def test_dashboard_loads(self, client):
         response = client.get('/')
