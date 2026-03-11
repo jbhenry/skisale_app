@@ -41,14 +41,17 @@ def to_eastern(dt):
 EQUIPMENT_TYPES = [
     'Skis',
     'Snowboards',
-    'Boots',
+    'Boots-Ski',
+    'Boots-Snowboard',
     'Poles',
     'Bindings',
     'Helmets',
     'Goggles',
     'Apparel',
     'Accessories',
-    'Other'
+    'Other',
+    'XC-Skis',
+    'XC-Boots'
 ]
 
 INVENTORY_STATUSES = [
