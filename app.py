@@ -287,7 +287,7 @@ def vendor_edit(vendor_id):
 def vendor_delete(vendor_id):
     """Delete vendor (soft delete by setting active=False)"""
     vendor = db.get_or_404(Vendor, vendor_id)
-    
+
     try:
         vendor.active = False
         db.session.commit()
@@ -295,8 +295,32 @@ def vendor_delete(vendor_id):
     except Exception as e:
         db.session.rollback()
         flash(f'Error deactivating consignor: {str(e)}', 'error')
-    
-    return redirect(url_for('vendors_list'))
+
+    return redirect(url_for('vendors_list',
+        search=request.form.get('search', ''),
+        active_only=request.form.get('active_only', 'false'),
+        sort=request.form.get('sort', 'name'),
+        direction=request.form.get('direction', 'asc')))
+
+
+@app.route('/vendors/<int:vendor_id>/reactivate', methods=['POST'])
+def vendor_reactivate(vendor_id):
+    """Reactivate a previously deactivated vendor"""
+    vendor = db.get_or_404(Vendor, vendor_id)
+
+    try:
+        vendor.active = True
+        db.session.commit()
+        flash(f'Consignor "{vendor.full_name}" reactivated successfully!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error reactivating consignor: {str(e)}', 'error')
+
+    return redirect(url_for('vendors_list',
+        search=request.form.get('search', ''),
+        active_only=request.form.get('active_only', 'false'),
+        sort=request.form.get('sort', 'name'),
+        direction=request.form.get('direction', 'asc')))
 
 @app.route('/vendors/<int:vendor_id>')
 def vendor_view(vendor_id):

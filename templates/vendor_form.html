@@ -24,6 +24,19 @@
                     </div>
                     {% endif %}
 
+                    <!-- Active Status -->
+                    <div class="mb-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch"
+                                   id="active" name="active"
+                                   style="width:3em; height:1.75em; cursor:pointer;"
+                                   {% if not vendor or vendor.active %}checked{% endif %}>
+                            <label class="form-check-label fs-5 fw-semibold ms-2" for="active">
+                                Active Consignor
+                            </label>
+                        </div>
+                    </div>
+
                     <!-- Consignor Name -->
                     <div class="row mb-3">
                         <div class="col-md-6">
@@ -144,15 +157,6 @@
                         <label for="notes" class="form-label">Notes</label>
                         <textarea class="form-control" id="notes" name="notes" 
                                   rows="3" placeholder="Additional notes...">{{ vendor.notes if vendor else '' }}</textarea>
-                    </div>
-
-                    <!-- Active Status -->
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="active" 
-                               name="active" {% if not vendor or vendor.active %}checked{% endif %}>
-                        <label class="form-check-label" for="active">
-                            Active Consignor
-                        </label>
                     </div>
 
                     <!-- Buttons -->
