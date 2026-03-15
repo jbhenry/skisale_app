@@ -4,5 +4,6 @@ Werkzeug==3.0.1
 openpyxl
 reportlab
 tzdata
+waitress
 pytest
 pytest-flask
