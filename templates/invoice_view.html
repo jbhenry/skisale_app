@@ -114,6 +114,9 @@
                 <div class="row">
                     <div class="col-md-8 text-end">
                         <p class="mb-2"><strong>Subtotal:</strong></p>
+                        {% if invoice.discount_amount %}
+                        <p class="mb-2 text-danger"><strong>Discount ({{ (invoice.discount_rate * 100)|round(0)|int }}%):</strong></p>
+                        {% endif %}
                         <p class="mb-2"><strong>Sales Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</strong></p>
                         {% if invoice.surcharge_amount %}
                         <p class="mb-2"><strong>{{ invoice.payment_method }} Surcharge ({{ (invoice.surcharge_rate * 100)|round(0)|int }}%):</strong></p>
@@ -122,6 +125,9 @@
                     </div>
                     <div class="col-md-4 text-end">
                         <p class="mb-2">${{ "%.2f"|format(invoice.subtotal) }}</p>
+                        {% if invoice.discount_amount %}
+                        <p class="mb-2 text-danger">-${{ "%.2f"|format(invoice.discount_amount) }}</p>
+                        {% endif %}
                         <p class="mb-2">${{ "%.2f"|format(invoice.tax_amount) }}</p>
                         {% if invoice.surcharge_amount %}
                         <p class="mb-2">${{ "%.2f"|format(invoice.surcharge_amount) }}</p>

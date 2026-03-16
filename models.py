@@ -119,6 +119,8 @@ class Invoice(db.Model):
     tax_amount = db.Column(db.Float, nullable=False, default=0.0)
     surcharge_rate = db.Column(db.Float, nullable=False, default=0.0)
     surcharge_amount = db.Column(db.Float, nullable=False, default=0.0)
+    discount_rate = db.Column(db.Float, nullable=False, default=0.0)
+    discount_amount = db.Column(db.Float, nullable=False, default=0.0)
     total = db.Column(db.Float, nullable=False, default=0.0)
     payment_method = db.Column(db.String(20))  # Cash, Credit, Check, etc.
     notes = db.Column(db.Text)
@@ -132,16 +134,18 @@ class Invoice(db.Model):
         return f'<Invoice #{self.id} - ${self.total}>'
     
     def calculate_totals(self):
-        """Calculate subtotal, tax, surcharge, and total from lines"""
+        """Calculate subtotal, discount, tax, surcharge, and total from lines"""
         self.subtotal = sum(line.price for line in self.lines)
-        self.tax_amount = self.subtotal * self.tax_rate
+        self.discount_amount = round(self.subtotal * self.discount_rate, 2)
+        discounted = self.subtotal - self.discount_amount
+        self.tax_amount = discounted * self.tax_rate
         if self.payment_method in SURCHARGE_METHODS:
             self.surcharge_rate = SURCHARGE_RATE
-            self.surcharge_amount = self.subtotal * SURCHARGE_RATE
+            self.surcharge_amount = discounted * SURCHARGE_RATE
         else:
             self.surcharge_rate = 0.0
             self.surcharge_amount = 0.0
-        self.total = self.subtotal + self.tax_amount + self.surcharge_amount
+        self.total = discounted + self.tax_amount + self.surcharge_amount
     
     def to_dict(self):
         """Convert to dictionary for JSON responses"""

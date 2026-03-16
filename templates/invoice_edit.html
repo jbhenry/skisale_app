@@ -114,6 +114,14 @@
                             </div>
 
                             <div class="mb-3">
+                                <label for="discount_rate" class="form-label">Discount</label>
+                                <select class="form-select" id="discount_rate" name="discount_rate">
+                                    <option value="0" {% if invoice.discount_rate == 0 %}selected{% endif %}>No discount (0%)</option>
+                                    <option value="10" {% if invoice.discount_rate == 0.10 %}selected{% endif %}>Employee discount (10%)</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="payment_method" class="form-label">Payment Method</label>
                                 <select class="form-select" name="payment_method">
                                     <option value="">--Select--</option>
@@ -149,6 +157,12 @@
                                 <td>Subtotal:</td>
                                 <td class="text-end"><strong>${{ "%.2f"|format(invoice.subtotal) }}</strong></td>
                             </tr>
+                            {% if invoice.discount_amount %}
+                            <tr class="text-danger">
+                                <td>Discount ({{ (invoice.discount_rate * 100)|round(0)|int }}%):</td>
+                                <td class="text-end"><strong>-${{ "%.2f"|format(invoice.discount_amount) }}</strong></td>
+                            </tr>
+                            {% endif %}
                             <tr>
                                 <td>Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</td>
                                 <td class="text-end"><strong>${{ "%.2f"|format(invoice.tax_amount) }}</strong></td>
@@ -169,6 +183,7 @@
                             <input type="hidden" name="action" value="complete">
                             <input type="hidden" name="customer_name" value="{{ invoice.customer_name or '' }}">
                             <input type="hidden" name="tax_rate" value="{{ (invoice.tax_rate * 100)|round(2) }}">
+                            <input type="hidden" name="discount_rate" value="{{ (invoice.discount_rate * 100)|round(0)|int }}">
                             <input type="hidden" name="payment_method" value="{{ invoice.payment_method or '' }}">
                             <input type="hidden" name="notes" value="{{ invoice.notes or '' }}">
                             

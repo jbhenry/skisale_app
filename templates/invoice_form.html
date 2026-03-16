@@ -23,7 +23,7 @@
                     </div>
 
                     <div class="row mb-3">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label for="tax_rate" class="form-label">Sales Tax Rate (%)</label>
                             <input type="number" class="form-control" id="tax_rate"
                                    name="tax_rate" step="0.01" min="0" max="100"
@@ -31,7 +31,14 @@
                                    placeholder="6.00" readonly>
                             <small class="text-muted">Fixed rate (6%)</small>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label for="discount_rate" class="form-label">Discount</label>
+                            <select class="form-select" id="discount_rate" name="discount_rate">
+                                <option value="0">No discount (0%)</option>
+                                <option value="10">Employee discount (10%)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
                             <label for="payment_method" class="form-label">Payment Method</label>
                             <select class="form-select" id="payment_method" name="payment_method">
                                 {% for method in payment_methods %}

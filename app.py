@@ -86,10 +86,12 @@ with app.app_context():
     except Exception:
         db.session.rollback()  # Column already exists — nothing to do
 
-    # Add surcharge columns if upgrading from an older schema
+    # Add surcharge/discount columns if upgrading from an older schema
     for col_sql in [
         'ALTER TABLE invoices ADD COLUMN surcharge_rate FLOAT NOT NULL DEFAULT 0.0',
         'ALTER TABLE invoices ADD COLUMN surcharge_amount FLOAT NOT NULL DEFAULT 0.0',
+        'ALTER TABLE invoices ADD COLUMN discount_rate FLOAT NOT NULL DEFAULT 0.0',
+        'ALTER TABLE invoices ADD COLUMN discount_amount FLOAT NOT NULL DEFAULT 0.0',
     ]:
         try:
             db.session.execute(text(col_sql))
@@ -750,6 +752,7 @@ def invoice_new():
             invoice = Invoice(
                 customer_name=request.form.get('customer_name', '').strip(),
                 tax_rate=float(request.form.get('tax_rate', DEFAULT_TAX_RATE * 100)) / 100,
+                discount_rate=float(request.form.get('discount_rate', 0)) / 100,
                 payment_method=request.form.get('payment_method', '').strip(),
                 notes=request.form.get('notes', '').strip()
             )
@@ -829,6 +832,7 @@ def invoice_edit(invoice_id):
             # Update invoice details
             invoice.customer_name = request.form.get('customer_name', '').strip()
             invoice.tax_rate = float(request.form.get('tax_rate', DEFAULT_TAX_RATE)) / 100
+            invoice.discount_rate = float(request.form.get('discount_rate', 0)) / 100
             invoice.payment_method = request.form.get('payment_method', '').strip()
             invoice.notes = request.form.get('notes', '').strip()
             invoice.calculate_totals()
@@ -840,6 +844,7 @@ def invoice_edit(invoice_id):
             # Finalize the invoice
             invoice.customer_name = request.form.get('customer_name', '').strip()
             invoice.tax_rate = float(request.form.get('tax_rate', DEFAULT_TAX_RATE)) / 100
+            invoice.discount_rate = float(request.form.get('discount_rate', 0)) / 100
             invoice.payment_method = request.form.get('payment_method', '').strip()
             invoice.notes = request.form.get('notes', '').strip()
             invoice.calculate_totals()
