@@ -44,7 +44,7 @@
             </div>
             <div class="col-md-2">
                 <select class="form-select" name="vendor" onchange="this.form.submit()">
-                    <option value="">All Consignors</option>
+                    <option value="">All Vendors</option>
                     {% for vendor in vendors %}
                     <option value="{{ vendor.id }}" {% if vendor_filter == vendor.id|string %}selected{% endif %}>
                         #{{ vendor.id }} - {{ vendor.full_name }}
@@ -77,7 +77,7 @@
                 <thead class="table-light">
                     <tr>
                         <th>SKU</th>
-                        <th>Consignor</th>
+                        <th>Vendor</th>
                         <th>Equipment Type</th>
                         <th>Description</th>
                         <th>Price</th>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consignor Check-In Receipt - {{ vendor.full_name }}</title>
+    <title>Vendor Check-In Receipt - {{ vendor.full_name }}</title>
     <style>
         @media print {
             .no-print { display: none !important; }
@@ -173,16 +173,16 @@
             <p class="org-sub">Consignment Ski Sale</p>
         </div>
         <div class="receipt-title">
-            <h2>Consignor Check-In Receipt</h2>
+            <h2>Vendor Check-In Receipt</h2>
             <p class="date">Date: {{ now.strftime('%B %d, %Y') }}</p>
-            <p class="date">Consignor ID: #{{ vendor.id }}</p>
+            <p class="date">Vendor ID: #{{ vendor.id }}</p>
         </div>
     </div>
 
     <!-- Vendor Info -->
     <div class="vendor-section">
         <div class="vendor-block" style="flex: 2;">
-            <h3>Consignor</h3>
+            <h3>Vendor</h3>
             <p class="vendor-name">{{ vendor.full_name }}</p>
             {% if vendor.phone %}<p>Phone: {{ vendor.phone }}</p>{% endif %}
             {% if vendor.email %}<p>Email: {{ vendor.email }}</p>{% endif %}
@@ -196,7 +196,7 @@
         <div class="vendor-block" style="flex: 1;">
             <h3>Consignment Terms</h3>
             <p>Commission: {{ (vendor.commission_rate * 100)|int }}%</p>
-            <p>Consignor receives: {{ 100 - (vendor.commission_rate * 100)|int }}%</p>
+            <p>Vendor receives: {{ 100 - (vendor.commission_rate * 100)|int }}%</p>
             {% if vendor.payment_method %}<p>Payment: {{ vendor.payment_method }}</p>{% endif %}
         </div>
     </div>
@@ -247,14 +247,14 @@
         </tfoot>
     </table>
     {% else %}
-    <div class="empty">No inventory on file for this consignor.</div>
+    <div class="empty">No inventory on file for this vendor.</div>
     {% endif %}
 
     <!-- Signature lines -->
     <div class="signature-line">
         <div class="sig-block">
             <div class="sig-line"></div>
-            <div class="sig-label">Consignor Signature</div>
+            <div class="sig-label">Vendor Signature</div>
         </div>
         <div class="sig-block">
             <div class="sig-line"></div>

@@ -242,12 +242,12 @@ def vendor_new():
             db.session.add(vendor)
             db.session.commit()
             
-            flash(f'Consignor "{vendor.full_name}" created successfully!', 'success')
+            flash(f'Vendor "{vendor.full_name}" created successfully!', 'success')
             return redirect(url_for('vendor_view', vendor_id=vendor.id))
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error creating consignor: {str(e)}', 'error')
+            flash(f'Error creating vendor: {str(e)}', 'error')
     
     return render_template('vendor_form.html', vendor=None, action='New')
 
@@ -274,12 +274,12 @@ def vendor_edit(vendor_id):
             
             db.session.commit()
             
-            flash(f'Consignor "{vendor.full_name}" updated successfully!', 'success')
+            flash(f'Vendor "{vendor.full_name}" updated successfully!', 'success')
             return redirect(url_for('vendors_list'))
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error updating consignor: {str(e)}', 'error')
+            flash(f'Error updating vendor: {str(e)}', 'error')
     
     return render_template('vendor_form.html', vendor=vendor, action='Edit')
 
@@ -291,10 +291,10 @@ def vendor_delete(vendor_id):
     try:
         vendor.active = False
         db.session.commit()
-        flash(f'Consignor "{vendor.full_name}" deactivated successfully!', 'success')
+        flash(f'Vendor "{vendor.full_name}" deactivated successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error deactivating consignor: {str(e)}', 'error')
+        flash(f'Error deactivating vendor: {str(e)}', 'error')
 
     return redirect(url_for('vendors_list',
         search=request.form.get('search', ''),
@@ -311,10 +311,10 @@ def vendor_reactivate(vendor_id):
     try:
         vendor.active = True
         db.session.commit()
-        flash(f'Consignor "{vendor.full_name}" reactivated successfully!', 'success')
+        flash(f'Vendor "{vendor.full_name}" reactivated successfully!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error reactivating consignor: {str(e)}', 'error')
+        flash(f'Error reactivating vendor: {str(e)}', 'error')
 
     return redirect(url_for('vendors_list',
         search=request.form.get('search', ''),
@@ -490,7 +490,7 @@ def vendor_checkin(vendor_id):
             if not item:
                 flash(f'SKU {sku} not found.', 'error')
             elif item.vendor_id != vendor.id:
-                flash(f'SKU {sku} belongs to a different consignor — not checked in.', 'error')
+                flash(f'SKU {sku} belongs to a different vendor — not checked in.', 'error')
             elif item.status == 'In-Stock':
                 flash(f'SKU {sku} ({item.description or item.equipment_type}) is already In-Stock.', 'warning')
             elif item.status not in CHECKIN_STATUSES:
@@ -535,7 +535,7 @@ def vendor_checkout(vendor_id):
             item_id = request.form.get('item_id', type=int)
             item = db.get_or_404(Inventory, item_id)
             if item.vendor_id != vendor.id:
-                flash(f'SKU {item.sku} belongs to a different consignor.', 'error')
+                flash(f'SKU {item.sku} belongs to a different vendor.', 'error')
             elif item.status not in ('In-Stock', 'Rejected'):
                 flash(f'SKU {item.sku} has status "{item.status}" and cannot be actioned.', 'warning')
             else:
@@ -566,7 +566,7 @@ def vendor_checkout(vendor_id):
                 if not item:
                     flash(f'SKU {sku} not found.', 'error')
                 elif item.vendor_id != vendor.id:
-                    flash(f'SKU {sku} belongs to a different consignor — not checked out.', 'error')
+                    flash(f'SKU {sku} belongs to a different vendor — not checked out.', 'error')
                 elif item.status == 'Returned to Vendor':
                     flash(f'SKU {sku} ({item.description or item.equipment_type}) has already been returned.', 'warning')
                 elif item.status not in ('In-Stock', 'Rejected'):
@@ -934,7 +934,7 @@ def admin_initialize_db():
         Inventory.query.delete()
         Vendor.query.update({'active': False})
         db.session.commit()
-        flash('Database initialized: all sales data cleared and consignors set to inactive.', 'success')
+        flash('Database initialized: all sales data cleared and vendors set to inactive.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error initializing database: {str(e)}', 'error')
@@ -942,7 +942,7 @@ def admin_initialize_db():
 
 @app.route('/admin/payout-report')
 def admin_payout_report():
-    """Generate an xlsx payout report — one row per consignor with amounts owed."""
+    """Generate an xlsx payout report — one row per vendor with amounts owed."""
     # Gather per-vendor sales data from invoice lines
     vendor_data = {}
     for invoice in Invoice.query.all():
@@ -983,7 +983,7 @@ def admin_payout_report():
 
     # Header row (row 2)
     headers = [
-        'Vendor #', 'Consignor Name',
+        'Vendor #', 'Vendor Name',
         'Address', 'City', 'State', 'ZIP',
         'Items Consigned', 'Items Sold',
         'Total Sold Price', 'Commission Rate', 'Commission Withheld', 'Total Payout'
@@ -1098,7 +1098,7 @@ def _inventory_xlsx(title, status_filter, sheet_name):
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)
-    headers = ['SKU', 'Vendor #', 'Consignor Name', 'Equipment Type', 'Description', 'Price']
+    headers = ['SKU', 'Vendor #', 'Vendor Name', 'Equipment Type', 'Description', 'Price']
     ws.append(headers)
     for col in range(1, len(headers) + 1):
         cell = ws.cell(row=2, column=col)
@@ -1315,7 +1315,7 @@ def _amount_to_words(amount):
 @app.route('/admin/print-checks')
 def admin_print_checks():
     """Generate a print-ready PDF: one check per page, top third = check,
-    middle and bottom thirds = consignor stubs."""
+    middle and bottom thirds = vendor stubs."""
     # ── Gather per-vendor payout data ────────────────────────────────────────
     vendor_sales  = {}   # vid -> total sold dollars
     vendor_items  = {}   # vid -> count of items sold

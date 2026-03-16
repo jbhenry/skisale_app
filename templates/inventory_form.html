@@ -21,12 +21,12 @@
                     {% for vendor in vendors %}
                         {% if vendor.id == preselect_vendor_id %}#{{ vendor.id }} - {{ vendor.full_name }}{% endif %}
                     {% endfor %}
-                    </strong>. After saving, you can add another item or view the consignor.
+                    </strong>. After saving, you can add another item or view the vendor.
                 </div>
                 {% endif %}
                 
                 <form method="POST">
-                    <!-- SKU and Consignor -->
+                    <!-- SKU and Vendor -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="sku" class="form-label">
@@ -40,10 +40,10 @@
                         </div>
                         <div class="col-md-6">
                             <label for="vendor_id" class="form-label">
-                                Consignor <span class="text-danger">*</span>
+                                Vendor <span class="text-danger">*</span>
                             </label>
                             <select class="form-select" id="vendor_id" name="vendor_id" required>
-                                <option value="">--Select Consignor--</option>
+                                <option value="">--Select Vendor--</option>
                                 {% for vendor in vendors %}
                                 <option value="{{ vendor.id }}" 
                                         {% if item and item.vendor_id == vendor.id %}selected
@@ -124,7 +124,7 @@
                                 Donate If Not Sold
                             </label>
                         </div>
-                        <small class="text-muted">Check if the consignor wants to donate this item if it does not sell.</small>
+                        <small class="text-muted">Check if the vendor wants to donate this item if it does not sell.</small>
                     </div>
 
                     <!-- Notes -->
@@ -142,7 +142,7 @@
                             </a>
                             {% if preselect_vendor_id %}
                             <a href="{{ url_for('vendor_view', vendor_id=preselect_vendor_id) }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-eye"></i> View Consignor
+                                <i class="bi bi-eye"></i> View Vendor
                             </a>
                             {% endif %}
                         </div>

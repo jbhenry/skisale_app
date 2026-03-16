@@ -178,7 +178,7 @@ class TestPayoutReport:
         ws = wb.active
         headers = [cell.value for cell in ws[2]]
         assert 'Vendor #'            in headers
-        assert 'Consignor Name'      in headers
+        assert 'Vendor Name'      in headers
         assert 'Total Payout'        in headers
         assert 'Commission Withheld' in headers
         assert 'Items Sold'          in headers
@@ -240,7 +240,7 @@ class TestInstockReport:
         wb = parse_xlsx(client.get('/admin/report-instock'))
         headers = [cell.value for cell in wb.active[2]]
         assert 'SKU'            in headers
-        assert 'Consignor Name' in headers
+        assert 'Vendor Name' in headers
         assert 'Price'          in headers
         assert 'Description'    in headers
 

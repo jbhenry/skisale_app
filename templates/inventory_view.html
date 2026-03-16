@@ -57,10 +57,10 @@
             </div>
         </div>
 
-        <!-- Consignor Info Card -->
+        <!-- Vendor Info Card -->
         <div class="card mb-3">
             <div class="card-header">
-                <h5 class="mb-0"><i class="bi bi-person"></i> Consignor Information</h5>
+                <h5 class="mb-0"><i class="bi bi-person"></i> Vendor Information</h5>
             </div>
             <div class="card-body">
                 <div class="row mb-2">
@@ -87,7 +87,7 @@
                         {{ (item.vendor.commission_rate * 100) | int }}%
                         <small class="text-muted">
                             (We keep ${{ "%.2f"|format(item.price * item.vendor.commission_rate) }}, 
-                            Consignor gets ${{ "%.2f"|format(item.price * (1 - item.vendor.commission_rate)) }})
+                            Vendor gets ${{ "%.2f"|format(item.price * (1 - item.vendor.commission_rate)) }})
                         </small>
                     </div>
                 </div>

@@ -5,11 +5,11 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h2><i class="bi bi-people"></i> Consignors</h2>
+        <h2><i class="bi bi-people"></i> Vendors</h2>
     </div>
     <div class="col-auto">
         <a href="{{ url_for('vendor_new') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> New Consignor
+            <i class="bi bi-plus-circle"></i> New Vendor
         </a>
     </div>
 </div>
@@ -35,7 +35,7 @@
                     <input type="hidden" name="active_only" id="activeOnlyValue" 
                            value="{% if active_only %}true{% else %}false{% endif %}">
                     <label class="form-check-label" for="activeOnlySwitch">
-                        Active consignors only
+                        Active vendors only
                     </label>
                 </div>
             </div>
@@ -153,14 +153,14 @@
         </div>
         
         <div class="mt-3 text-muted">
-            <small>Showing {{ vendors|length }} consignor(s)</small>
+            <small>Showing {{ vendors|length }} vendor(s)</small>
         </div>
         {% else %}
         <div class="text-center py-5 text-muted">
             <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-            <p class="mt-3">No consignors found.</p>
+            <p class="mt-3">No vendors found.</p>
             <a href="{{ url_for('vendor_new') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Add Your First Consignor
+                <i class="bi bi-plus-circle"></i> Add Your First Vendor
             </a>
         </div>
         {% endif %}
@@ -176,8 +176,8 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to deactivate consignor <strong id="vendorName"></strong>?
-                <p class="text-muted mt-2"><small>The consignor will be marked as inactive but not permanently deleted.</small></p>
+                Are you sure you want to deactivate vendor <strong id="vendorName"></strong>?
+                <p class="text-muted mt-2"><small>The vendor will be marked as inactive but not permanently deleted.</small></p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

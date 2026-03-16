@@ -6,10 +6,13 @@
 <div class="row">
     <div class="col-lg-8 mx-auto">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2><i class="bi bi-person"></i> Consignor Details</h2>
+            <h2><i class="bi bi-person"></i> Vendor Details</h2>
             <div>
                 <a href="{{ url_for('vendors_list') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to List
+                </a>
+                <a href="{{ url_for('vendor_new') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle"></i> New Vendor
                 </a>
                 <a href="{{ url_for('vendor_receipt', vendor_id=vendor.id) }}" class="btn btn-outline-secondary" target="_blank">
                     <i class="bi bi-printer"></i> Check-In Receipt
@@ -23,7 +26,7 @@
             </div>
         </div>
 
-        <!-- Consignor Info Card -->
+        <!-- Vendor Info Card -->
         <div class="card mb-3">
             <div class="card-header bg-primary text-white">
                 <div class="d-flex justify-content-between align-items-center">
@@ -116,7 +119,7 @@
                     <div class="col-md-8">
                         <span class="badge bg-info text-dark">{{ (vendor.commission_rate * 100) | int }}%</span>
                         <small class="text-muted">
-                            (Consignor receives {{ 100 - ((vendor.commission_rate * 100) | int) }}% of sale)
+                            (Vendor receives {{ 100 - ((vendor.commission_rate * 100) | int) }}% of sale)
                         </small>
                     </div>
                 </div>
@@ -192,7 +195,7 @@
                     <div class="col-md-3">
                         <div class="border rounded p-3 bg-light">
                             <h3 class="text-success mb-0">${{ "%.2f"|format(payout_amount) }}</h3>
-                            <small class="text-muted">Consignor Payout</small>
+                            <small class="text-muted">Vendor Payout</small>
                             <br><small class="text-muted">(After {{ (vendor.commission_rate * 100)|int }}% commission)</small>
                         </div>
                     </div>

@@ -14,3 +14,4 @@ lib64/*
 var
 var/*
 var/app-instance/backups/*
+pyvenv.cfg

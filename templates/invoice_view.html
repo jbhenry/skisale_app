@@ -11,6 +11,9 @@
                 <a href="{{ url_for('invoices_list') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to List
                 </a>
+                <a href="{{ url_for('invoice_new') }}" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-circle"></i> New Sale
+                </a>
                 {% if returns_mode %}
                 <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-circle"></i> Done
@@ -69,7 +72,7 @@
                                 <th>SKU</th>
                                 <th>Description</th>
                                 <th>Equipment Type</th>
-                                <th>Consignor</th>
+                                <th>Vendor</th>
                                 <th class="text-end">Price</th>
                                 {% if returns_mode %}<th></th>{% endif %}
                             </tr>

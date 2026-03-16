@@ -92,7 +92,7 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.endpoint == 'vendors_list' %}active{% endif %}" 
                            href="{{ url_for('vendors_list') }}">
-                            <i class="bi bi-people"></i> Consignors
+                            <i class="bi bi-people"></i> Vendors
                         </a>
                     </li>
                     <li class="nav-item">
@@ -106,9 +106,6 @@
                            href="{{ url_for('invoices_list') }}">
                             <i class="bi bi-receipt"></i> Invoices
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#"><i class="bi bi-cart"></i> Customers</a>
                     </li>
                 </ul>
                 <button id="darkModeToggle" title="Toggle dark mode">
