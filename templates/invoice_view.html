@@ -8,21 +8,21 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-receipt"></i> Invoice #{{ invoice.id }}</h2>
             <div class="d-flex gap-2">
-                <a href="{{ url_for('invoices_list') }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('invoices.invoices_list') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Back to List
                 </a>
-                <a href="{{ url_for('invoice_new') }}" class="btn btn-outline-primary">
+                <a href="{{ url_for('invoices.invoice_new') }}" class="btn btn-outline-primary">
                     <i class="bi bi-plus-circle"></i> New Sale
                 </a>
                 {% if returns_mode %}
-                <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" class="btn btn-outline-secondary">
+                <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-x-circle"></i> Done
                 </a>
                 {% else %}
-                <a href="{{ url_for('invoice_view', invoice_id=invoice.id, returns='1') }}" class="btn btn-warning">
+                <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id, returns='1') }}" class="btn btn-warning">
                     <i class="bi bi-arrow-return-left"></i> Return Items
                 </a>
-                <a href="{{ url_for('invoice_receipt', invoice_id=invoice.id) }}"
+                <a href="{{ url_for('invoices.invoice_receipt', invoice_id=invoice.id) }}"
                    class="btn btn-primary" target="_blank">
                     <i class="bi bi-printer"></i> Print Receipt
                 </a>
@@ -84,14 +84,14 @@
                                 <td>{{ line.inventory_item.description or '—' }}</td>
                                 <td>{{ line.inventory_item.equipment_type }}</td>
                                 <td>
-                                    <a href="{{ url_for('vendor_view', vendor_id=line.inventory_item.vendor_id) }}">
+                                    <a href="{{ url_for('vendors.vendor_view', vendor_id=line.inventory_item.vendor_id) }}">
                                         #{{ line.inventory_item.vendor_id }} - {{ line.inventory_item.vendor.full_name }}
                                     </a>
                                 </td>
                                 <td class="text-end">${{ "%.2f"|format(line.price) }}</td>
                                 {% if returns_mode %}
                                 <td>
-                                    <form method="POST" action="{{ url_for('invoice_return_item', invoice_id=invoice.id) }}" style="display:inline;">
+                                    <form method="POST" action="{{ url_for('invoices.invoice_return_item', invoice_id=invoice.id) }}" style="display:inline;">
                                         <input type="hidden" name="line_id" value="{{ line.id }}">
                                         <button type="submit" class="btn btn-sm btn-warning"
                                                 onclick="return confirm('Return {{ line.inventory_item.sku }} to stock?')">

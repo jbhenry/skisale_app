@@ -3,7 +3,7 @@ Tests for invoice routes and business logic.
 """
 import pytest
 from models import Invoice, Inventory, InvoiceLine
-from app import release_abandoned_invoices
+from routes.invoices import release_abandoned_invoices
 
 
 class TestInvoiceCreate:

@@ -92,16 +92,16 @@
             <div class="card-body">
                 <h5 class="mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('invoice_new') }}" class="btn btn-success">
+                    <a href="{{ url_for('invoices.invoice_new') }}" class="btn btn-success">
                         <i class="bi bi-cart-plus"></i> New Sale
                     </a>
-                    <a href="{{ url_for('vendor_new') }}" class="btn btn-info">
+                    <a href="{{ url_for('vendors.vendor_new') }}" class="btn btn-info">
                         <i class="bi bi-person-plus"></i> New Vendor
                     </a>
-                    <a href="{{ url_for('invoices_list') }}" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('invoices.invoices_list') }}" class="btn btn-outline-secondary">
                         <i class="bi bi-receipt"></i> View Invoices
                     </a>
-                    <a href="{{ url_for('inventory_list') }}?status=In-Stock" class="btn btn-outline-secondary">
+                    <a href="{{ url_for('inventory.inventory_list') }}?status=In-Stock" class="btn btn-outline-secondary">
                         <i class="bi bi-box-seam"></i> Available Inventory
                     </a>
                 </div>
@@ -190,7 +190,7 @@
             <div class="card-body text-center">
                 <h1 class="display-4 text-primary">{{ active_vendors }}</h1>
                 <p class="text-muted mb-0">Active Vendors</p>
-                <a href="{{ url_for('vendors_list') }}" class="btn btn-sm btn-outline-primary mt-3">
+                <a href="{{ url_for('vendors.vendors_list') }}" class="btn btn-sm btn-outline-primary mt-3">
                     View All <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
@@ -206,7 +206,7 @@
             <div class="card-body text-center">
                 <h1 class="display-4 text-primary">{{ total_inventory }}</h1>
                 <p class="text-muted mb-0">Items Consigned</p>
-                <a href="{{ url_for('inventory_list') }}" class="btn btn-sm btn-outline-primary mt-3">
+                <a href="{{ url_for('inventory.inventory_list') }}" class="btn btn-sm btn-outline-primary mt-3">
                     View All <i class="bi bi-arrow-right"></i>
                 </a>
             </div>

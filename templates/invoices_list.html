@@ -8,7 +8,7 @@
         <h2><i class="bi bi-receipt"></i> Invoices</h2>
     </div>
     <div class="col-auto">
-        <a href="{{ url_for('invoice_new') }}" class="btn btn-primary">
+        <a href="{{ url_for('invoices.invoice_new') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> New Sale
         </a>
     </div>
@@ -37,7 +37,7 @@
                     {% for invoice in invoices %}
                     <tr>
                         <td>
-                            <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" 
+                            <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id) }}" 
                                class="text-decoration-none">
                                 <strong>#{{ invoice.id }}</strong>
                             </a>
@@ -51,11 +51,11 @@
                         <td>{{ invoice.payment_method or '—' }}</td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('invoice_view', invoice_id=invoice.id) }}" 
+                                <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id) }}" 
                                    class="btn btn-outline-primary" title="View">
                                     <i class="bi bi-eye"></i>
                                 </a>
-                                <a href="{{ url_for('invoice_receipt', invoice_id=invoice.id) }}" 
+                                <a href="{{ url_for('invoices.invoice_receipt', invoice_id=invoice.id) }}" 
                                    class="btn btn-outline-secondary" title="Receipt" target="_blank">
                                     <i class="bi bi-printer"></i>
                                 </a>
@@ -88,7 +88,7 @@
         <div class="text-center py-5 text-muted">
             <i class="bi bi-inbox" style="font-size: 3rem;"></i>
             <p class="mt-3">No invoices yet.</p>
-            <a href="{{ url_for('invoice_new') }}" class="btn btn-primary">
+            <a href="{{ url_for('invoices.invoice_new') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle"></i> Create Your First Sale
             </a>
         </div>

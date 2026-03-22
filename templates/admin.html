@@ -7,7 +7,7 @@
     <div class="col-lg-8 mx-auto">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2><i class="bi bi-gear"></i> Administration</h2>
-            <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('vendors.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Dashboard
             </a>
         </div>
@@ -53,7 +53,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form method="POST" action="{{ url_for('admin_initialize_db') }}" class="d-inline">
+                        <form method="POST" action="{{ url_for('admin.admin_initialize_db') }}" class="d-inline">
                             <button type="submit" class="btn btn-danger">
                                 <i class="bi bi-arrow-counterclockwise"></i> Yes, Initialize Database
                             </button>
@@ -71,7 +71,7 @@
             <div class="card-body">
                 <p class="text-muted">Day-to-day operational tasks during the sale.</p>
                 <div class="list-group list-group-flush">
-                    <form method="POST" action="{{ url_for('admin_backup_db') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-0">
+                    <form method="POST" action="{{ url_for('admin.admin_backup_db') }}" class="list-group-item list-group-item-action d-flex align-items-center gap-3 p-0">
                         <button type="submit" class="btn w-100 text-start d-flex align-items-center gap-3 p-3 border-0 bg-transparent">
                             <i class="bi bi-cloud-arrow-down fs-4 text-primary"></i>
                             <div>
@@ -81,7 +81,7 @@
                             <i class="bi bi-save ms-auto text-muted"></i>
                         </button>
                     </form>
-                    <a href="{{ url_for('admin_export_inventory_csv') }}"
+                    <a href="{{ url_for('admin.admin_export_inventory_csv') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-filetype-csv fs-4 text-primary"></i>
                         <div>
@@ -103,7 +103,7 @@
             <div class="card-body">
                 <p class="text-muted">End-of-sale reports and close-out tasks.</p>
                 <div class="list-group list-group-flush">
-                    <a href="{{ url_for('admin_report_instock') }}"
+                    <a href="{{ url_for('admin.admin_report_instock') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-warning"></i>
                         <div>
@@ -112,7 +112,7 @@
                         </div>
                         <i class="bi bi-download ms-auto text-muted"></i>
                     </a>
-                    <a href="{{ url_for('admin_report_donated') }}"
+                    <a href="{{ url_for('admin.admin_report_donated') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-info"></i>
                         <div>
@@ -121,7 +121,7 @@
                         </div>
                         <i class="bi bi-download ms-auto text-muted"></i>
                     </a>
-                    <a href="{{ url_for('admin_report_salestax') }}"
+                    <a href="{{ url_for('admin.admin_report_salestax') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-secondary"></i>
                         <div>
@@ -130,7 +130,7 @@
                         </div>
                         <i class="bi bi-download ms-auto text-muted"></i>
                     </a>
-                    <a href="{{ url_for('admin_payout_report') }}"
+                    <a href="{{ url_for('admin.admin_payout_report') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-success"></i>
                         <div>
@@ -139,7 +139,7 @@
                         </div>
                         <i class="bi bi-download ms-auto text-muted"></i>
                     </a>
-                    <a href="{{ url_for('admin_print_checks') }}"
+                    <a href="{{ url_for('admin.admin_print_checks') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
                         <div>
