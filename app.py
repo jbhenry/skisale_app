@@ -74,6 +74,28 @@ PAYMENT_METHODS = [
 # Default sales tax rate (can be changed per invoice)
 DEFAULT_TAX_RATE = 0.06  # 6%
 
+def release_abandoned_invoices():
+    """Release any items left in Pending status from a previous session.
+
+    This happens when a user starts an invoice then navigates away without
+    completing or cancelling it. The abandoned invoice is deleted and all
+    its Pending items are returned to In-Stock.
+    """
+    abandoned = (Invoice.query
+                 .join(InvoiceLine)
+                 .join(Inventory, InvoiceLine.inventory_id == Inventory.id)
+                 .filter(Inventory.status == 'Pending')
+                 .distinct()
+                 .all())
+    for invoice in abandoned:
+        for line in invoice.lines:
+            if line.inventory_item.status == 'Pending':
+                line.inventory_item.status = 'In-Stock'
+        db.session.delete(invoice)
+    if abandoned:
+        db.session.commit()
+
+
 # Create tables and run lightweight column migrations
 with app.app_context():
     db.create_all()
@@ -103,6 +125,8 @@ with app.app_context():
     db.session.execute(text('PRAGMA journal_mode=WAL'))
     db.session.execute(text('PRAGMA busy_timeout=5000'))
     db.session.commit()
+
+    release_abandoned_invoices()
 
     # Migrate sku column from VARCHAR to INTEGER if upgrading from an older schema.
     # SQLite doesn't support ALTER COLUMN, so we rename → recreate → copy → drop.

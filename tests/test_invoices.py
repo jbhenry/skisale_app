@@ -3,6 +3,7 @@ Tests for invoice routes and business logic.
 """
 import pytest
 from models import Invoice, Inventory, InvoiceLine
+from app import release_abandoned_invoices
 
 
 class TestInvoiceCreate:
@@ -547,3 +548,88 @@ class TestDashboard:
         assert response.status_code == 200
         # $150 sale * 20% commission = $30 commission, $120 vendor payout
         assert b'159' in response.data or b'150' in response.data
+
+
+class TestReleaseAbandonedInvoices:
+    def test_pending_item_returned_to_stock(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_item.status = 'Pending'
+        line = InvoiceLine(invoice_id=sample_invoice.id, inventory_id=sample_item.id, price=sample_item.price)
+        db.session.add(line)
+        db.session.commit()
+
+        release_abandoned_invoices()
+
+        db.session.refresh(sample_item)
+        assert sample_item.status == 'In-Stock'
+
+    def test_abandoned_invoice_deleted(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_item.status = 'Pending'
+        line = InvoiceLine(invoice_id=sample_invoice.id, inventory_id=sample_item.id, price=sample_item.price)
+        db.session.add(line)
+        db.session.commit()
+        invoice_id = sample_invoice.id
+
+        release_abandoned_invoices()
+
+        assert db.session.get(Invoice, invoice_id) is None
+
+    def test_completed_invoice_not_affected(self, db, sample_vendor, sample_item, sample_invoice):
+        sample_item.status = 'Sold'
+        line = InvoiceLine(invoice_id=sample_invoice.id, inventory_id=sample_item.id, price=sample_item.price)
+        db.session.add(line)
+        db.session.commit()
+        invoice_id = sample_invoice.id
+
+        release_abandoned_invoices()
+
+        assert db.session.get(Invoice, invoice_id) is not None
+        db.session.refresh(sample_item)
+        assert sample_item.status == 'Sold'
+
+    def test_empty_invoice_not_affected(self, db, sample_invoice):
+        invoice_id = sample_invoice.id
+
+        release_abandoned_invoices()
+
+        assert db.session.get(Invoice, invoice_id) is not None
+
+    def test_only_pending_items_reset(self, db, sample_vendor, sample_invoice):
+        """An invoice with both Pending and Sold lines: only Pending items are reset."""
+        pending_item = Inventory(sku=8000001, vendor_id=sample_vendor.id,
+                                 equipment_type='Skis', price=100.00, status='Pending')
+        sold_item = Inventory(sku=8000002, vendor_id=sample_vendor.id,
+                              equipment_type='Boots', price=50.00, status='Sold')
+        db.session.add_all([pending_item, sold_item])
+        db.session.flush()
+        db.session.add_all([
+            InvoiceLine(invoice_id=sample_invoice.id, inventory_id=pending_item.id, price=100.00),
+            InvoiceLine(invoice_id=sample_invoice.id, inventory_id=sold_item.id, price=50.00),
+        ])
+        db.session.commit()
+
+        release_abandoned_invoices()
+
+        db.session.refresh(pending_item)
+        db.session.refresh(sold_item)
+        assert pending_item.status == 'In-Stock'
+        assert sold_item.status == 'Sold'
+
+
+class TestCancelInvoiceButton:
+    def test_cancel_button_present_on_edit_page(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/edit')
+        assert b'Cancel Invoice' in response.data
+
+    def test_cancel_button_deletes_invoice_and_restores_stock(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(invoice_id=sample_invoice.id, inventory_id=sample_item.id, price=sample_item.price)
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+        invoice_id = sample_invoice.id
+
+        response = client.post(f'/invoices/{invoice_id}/delete', follow_redirects=True)
+
+        assert response.status_code == 200
+        assert db.session.get(Invoice, invoice_id) is None
+        db.session.refresh(sample_item)
+        assert sample_item.status == 'In-Stock'

@@ -186,10 +186,18 @@
                             <input type="hidden" name="discount_rate" value="{{ (invoice.discount_rate * 100)|round(0)|int }}">
                             <input type="hidden" name="payment_method" value="{{ invoice.payment_method or '' }}">
                             <input type="hidden" name="notes" value="{{ invoice.notes or '' }}">
-                            
+
                             <button type="submit" class="btn btn-success btn-lg w-100"
                                     {% if invoice.lines|length == 0 %}disabled{% endif %}>
                                 <i class="bi bi-check-circle"></i> Complete Sale
+                            </button>
+                        </form>
+
+                        <form method="POST" action="{{ url_for('invoice_delete', invoice_id=invoice.id) }}"
+                              class="mt-2"
+                              onsubmit="return confirm('Cancel this invoice? All items will be returned to In-Stock.')">
+                            <button type="submit" class="btn btn-outline-danger w-100">
+                                <i class="bi bi-x-circle"></i> Cancel Invoice
                             </button>
                         </form>
                     </div>
@@ -204,5 +212,26 @@
 <script>
     // Auto-focus SKU input after form submission
     document.getElementById('skuInput').focus();
+
+    // Warn before navigating away if there are unsaved/incomplete items.
+    // Suppressed when any form on the page is submitted, since all form
+    // actions are intentional (add item, remove item, update, complete, cancel).
+    const hasItems = {{ invoice.lines | length }} > 0;
+    if (hasItems) {
+        let allowLeave = false;
+
+        window.addEventListener('beforeunload', function (e) {
+            if (!allowLeave) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
+
+        document.querySelectorAll('form').forEach(function (form) {
+            form.addEventListener('submit', function () {
+                allowLeave = true;
+            });
+        });
+    }
 </script>
 {% endblock %}
