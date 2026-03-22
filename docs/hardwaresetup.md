@@ -14,6 +14,7 @@ We currently use the following hardware to run the swap:
 * Square credit card readers. We have two bluetooth-connected card readers. Access to the WiFi in the lodge has at times been... challenging.
     * If we can get access to the lodge WiFi, we can use the patrol's two iPads to run the Square register app to process credit cards.
     * If we cannot get access to the lodge WiFi, we have in the past used individual's cell phones either as a hotspot for the tablets, or used the phone directly with the Square app and readers.
+    * Note that credit card processing via Square is entirely separate from the main application. 
 
 ## Setup a new laptop workstation
 
@@ -25,16 +26,16 @@ Assuming a Windows machine:
 1. Install an alternative browser if needed. Required only if the included browser does not function properly with the application. 
 1. Connect to the isolated LAN environment. SSID and password are on the router.
 1. Install printer drivers. Drivers are located on the server machine in C:\skisale, or can be downloaded from the manufacturers web site.
-    * Rongta reciept printer driver.
-    * Pantum laser printer driver. 
-1. Setup printers 
+    * Rongta receipt printer driver.
+    * Pantum laser printer driver.
+1. Setup printers
     * Each printer has the IP address labeled on the side.
-    * Two instances of the Rongta reciept printer
+    * Two instances of the Rongta receipt printer
     * Two instances of the Pantum laser printer
     * Set the closest Rongta as the default printer. 
 1. Create a shortcut on the desktop to the server URL **http://\<hostname\>:5000**, where \<hostname\> is the IP address of the server machine. 
 
-We've only had Windows laptops so far, but a Mac or Linux machine should work just as well for a workstation. The only requirements are a web browser, access to our LAN, and drivers for our printers. Setup would be very similiar to above. 
+We've only had Windows laptops so far, but a Mac or Linux machine should work just as well for a workstation. The only requirements are a web browser, access to our LAN, and drivers for our printers. Setup would be very similar to above. 
 
 ## Setup a new server
 
@@ -68,7 +69,7 @@ Setting up a new server machine is a little involved. The below again assumes a 
     python app.py
     ```
 1. Connect your browser to http://localhost:5000. You should see the complete application, with a sample database of a few vendors and items. Hit CTRL-C to shut down the dev server.
-1. The database is stored in a SQLite3 database in C:\skisale_app\var\app-instance\skisale.db. If you have a copy from a past swap that you want to use (to maintain the list of Vendors), you can simiply replace this file and re-start the server.
+1. The database is stored in a SQLite3 database in C:\skisale_app\var\app-instance\skisale.db. If you have a copy from a past swap that you want to use (to maintain the list of Vendors), you can simply replace this file and re-start the server.
 1. Connect to the isolated LAN environment. SSID and password are on the router.
 1. Start the production server. In a command prompt:
     ```

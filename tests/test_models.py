@@ -164,3 +164,65 @@ class TestInvoiceSurchargeModel:
         assert sample_invoice.tax_amount == pytest.approx(10.00)
         assert sample_invoice.surcharge_amount == pytest.approx(3.00)
         assert sample_invoice.total == pytest.approx(113.00)
+
+
+class TestInvoiceDiscountModel:
+    def test_discount_reduces_total(self, db, sample_vendor, sample_item, sample_invoice):
+        """Discount is applied to subtotal before tax."""
+        sample_invoice.discount_rate = 0.10  # 10%
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        # discounted = 100 - 10 = 90, tax = 90 * 0.06 = 5.40, total = 95.40
+        assert sample_invoice.discount_amount == pytest.approx(10.00)
+        assert sample_invoice.tax_amount == pytest.approx(5.40)
+        assert sample_invoice.total == pytest.approx(95.40)
+
+    def test_discount_applied_before_surcharge(self, db, sample_vendor, sample_item, sample_invoice):
+        """Surcharge is calculated on the discounted amount, not the full subtotal."""
+        sample_invoice.payment_method = 'Credit Card'
+        sample_invoice.discount_rate = 0.10  # 10%
+        sample_invoice.tax_rate = 0.06
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        # discounted = 90, tax = 90 * 0.06 = 5.40, surcharge = 90 * 0.03 = 2.70, total = 98.10
+        assert sample_invoice.discount_amount == pytest.approx(10.00)
+        assert sample_invoice.surcharge_amount == pytest.approx(2.70)
+        assert sample_invoice.tax_amount == pytest.approx(5.40)
+        assert sample_invoice.total == pytest.approx(98.10)
+
+    def test_zero_discount_unchanged(self, db, sample_vendor, sample_item, sample_invoice):
+        """A zero discount rate leaves totals unaffected."""
+        sample_invoice.discount_rate = 0.0
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        db.session.commit()
+
+        sample_invoice.calculate_totals()
+        assert sample_invoice.discount_amount == pytest.approx(0.00)
+        assert sample_invoice.total == pytest.approx(106.00)  # 100 + 6% tax
+
+    def test_discount_default_is_zero(self, db):
+        """Invoices default to no discount."""
+        invoice = Invoice(customer_name='Test', tax_rate=0.06, payment_method='Cash')
+        db.session.add(invoice)
+        db.session.commit()
+        assert invoice.discount_rate == 0.0
+        assert invoice.discount_amount == 0.0

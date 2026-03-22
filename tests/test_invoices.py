@@ -165,6 +165,78 @@ class TestInvoiceComplete:
         assert f'/invoices/{sample_invoice.id}' in response.location
 
 
+class TestInvoiceEditGet:
+    def test_get_edit_form_returns_200(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/edit')
+        assert response.status_code == 200
+
+    def test_get_edit_form_shows_customer_name(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/edit')
+        assert b'Bob Smith' in response.data
+
+    def test_get_edit_form_404_for_missing_invoice(self, client):
+        response = client.get('/invoices/9999/edit')
+        assert response.status_code == 404
+
+
+class TestInvoiceUpdate:
+    def test_update_invoice_changes_customer_name(self, client, db, sample_invoice):
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'update_invoice',
+            'customer_name': 'New Name',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '0',
+        })
+
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.customer_name == 'New Name'
+
+    def test_update_invoice_changes_payment_method(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'update_invoice',
+            'customer_name': sample_invoice.customer_name,
+            'tax_rate': '0',
+            'payment_method': 'Credit Card',
+            'discount_rate': '0',
+        })
+
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.payment_method == 'Credit Card'
+        assert sample_invoice.surcharge_amount == pytest.approx(3.00)  # 3% of $100
+
+    def test_update_invoice_changes_tax_rate(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'update_invoice',
+            'customer_name': sample_invoice.customer_name,
+            'tax_rate': '10',
+            'payment_method': 'Cash',
+            'discount_rate': '0',
+        })
+
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.tax_rate == pytest.approx(0.10)
+        assert sample_invoice.tax_amount == pytest.approx(10.00)
+
+
 class TestInvoiceDelete:
     def test_delete_returns_items_to_stock(self, client, db, sample_item, sample_invoice):
         line = InvoiceLine(
@@ -184,6 +256,10 @@ class TestInvoiceDelete:
         assert db.session.get(Invoice, invoice_id) is None
         db.session.refresh(sample_item)
         assert sample_item.status == 'In-Stock'
+
+    def test_delete_nonexistent_invoice_returns_404(self, client):
+        response = client.post('/invoices/9999/delete')
+        assert response.status_code == 404
 
 
 class TestInvoiceList:
@@ -360,6 +436,92 @@ class TestInvoiceSurcharge:
         db.session.refresh(invoice)
         assert invoice.surcharge_rate == 0.0
         assert invoice.surcharge_amount == 0.0
+
+
+class TestInvoiceDiscount:
+    def test_create_invoice_stores_discount_rate(self, client, db):
+        client.post('/invoices/new', data={
+            'customer_name': 'Discount Buyer',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        }, follow_redirects=True)
+
+        invoice = Invoice.query.filter_by(customer_name='Discount Buyer').first()
+        assert invoice is not None
+        assert invoice.discount_rate == pytest.approx(0.10)
+
+    def test_update_invoice_applies_discount(self, client, db, sample_item, sample_invoice):
+        # Add an item first
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'update_invoice',
+            'customer_name': sample_invoice.customer_name,
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        })
+
+        db.session.refresh(sample_invoice)
+        # discounted = 90, tax = 90 * 0.06 = 5.40, total = 95.40
+        assert sample_invoice.discount_rate == pytest.approx(0.10)
+        assert sample_invoice.discount_amount == pytest.approx(10.00)
+        assert sample_invoice.total == pytest.approx(95.40)
+
+    def test_complete_invoice_with_discount(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=100.00,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        response = client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'complete',
+            'customer_name': 'Bob Smith',
+            'tax_rate': '0',
+            'payment_method': 'Cash',
+            'discount_rate': '20',
+        })
+
+        assert response.status_code == 302
+        db.session.refresh(sample_invoice)
+        # discounted = 80, tax = 0, total = 80
+        assert sample_invoice.discount_rate == pytest.approx(0.20)
+        assert sample_invoice.discount_amount == pytest.approx(20.00)
+        assert sample_invoice.total == pytest.approx(80.00)
+
+    def test_discount_with_surcharge(self, client, db, sample_item):
+        """Surcharge applies to the discounted amount, not the full subtotal."""
+        client.post('/invoices/new', data={
+            'customer_name': 'CC Discount',
+            'tax_rate': '0',
+            'payment_method': 'Credit Card',
+            'discount_rate': '10',
+        }, follow_redirects=True)
+
+        invoice = Invoice.query.filter_by(customer_name='CC Discount').first()
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'add_item',
+            'sku': sample_item.sku,
+        })
+
+        db.session.refresh(invoice)
+        # sample_item price = $150, 10% discount = $15, discounted = $135
+        # surcharge = 135 * 0.03 = 4.05, total = 139.05
+        assert invoice.discount_amount == pytest.approx(15.00)
+        assert invoice.surcharge_amount == pytest.approx(4.05)
+        assert invoice.total == pytest.approx(139.05)
 
 
 class TestDashboard:

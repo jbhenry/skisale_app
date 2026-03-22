@@ -479,3 +479,27 @@ class TestVendorCheckout:
         # Returned item should no longer appear as actionable
         assert in_stock_item.description.encode() not in response.data or \
                b'Checkout Boot' not in response.data
+
+
+class TestVendorReactivate:
+    def test_reactivate_sets_active(self, client, db, sample_vendor):
+        sample_vendor.active = False
+        db.session.commit()
+
+        client.post(f'/vendors/{sample_vendor.id}/reactivate')
+
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.active is True
+
+    def test_reactivate_redirects_to_vendor_list(self, client, db, sample_vendor):
+        sample_vendor.active = False
+        db.session.commit()
+
+        response = client.post(f'/vendors/{sample_vendor.id}/reactivate')
+
+        assert response.status_code == 302
+        assert '/vendors' in response.location
+
+    def test_reactivate_nonexistent_vendor_returns_404(self, client):
+        response = client.post('/vendors/9999/reactivate')
+        assert response.status_code == 404
