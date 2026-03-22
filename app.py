@@ -772,11 +772,19 @@ def invoice_new():
     """Create new invoice"""
     if request.method == 'POST':
         try:
+            customer_name = request.form.get('customer_name', '').strip()
+            discount_rate = float(request.form.get('discount_rate', 0)) / 100
+            if discount_rate > 0 and not customer_name:
+                flash('Customer name is required when a discount is applied.', 'error')
+                return render_template('invoice_form.html',
+                                       invoice=None,
+                                       payment_methods=PAYMENT_METHODS,
+                                       default_tax_rate=DEFAULT_TAX_RATE * 100)
             # Create invoice
             invoice = Invoice(
-                customer_name=request.form.get('customer_name', '').strip(),
+                customer_name=customer_name,
                 tax_rate=float(request.form.get('tax_rate', DEFAULT_TAX_RATE * 100)) / 100,
-                discount_rate=float(request.form.get('discount_rate', 0)) / 100,
+                discount_rate=discount_rate,
                 payment_method=request.form.get('payment_method', '').strip(),
                 notes=request.form.get('notes', '').strip()
             )
@@ -854,33 +862,42 @@ def invoice_edit(invoice_id):
         
         elif action == 'update_invoice':
             # Update invoice details
-            invoice.customer_name = request.form.get('customer_name', '').strip()
-            invoice.tax_rate = float(request.form.get('tax_rate', DEFAULT_TAX_RATE)) / 100
-            invoice.discount_rate = float(request.form.get('discount_rate', 0)) / 100
-            invoice.payment_method = request.form.get('payment_method', '').strip()
-            invoice.notes = request.form.get('notes', '').strip()
-            invoice.calculate_totals()
-            db.session.commit()
-            
-            flash('Invoice updated successfully!', 'success')
-        
+            customer_name = request.form.get('customer_name', '').strip()
+            discount_rate = float(request.form.get('discount_rate', 0)) / 100
+            if discount_rate > 0 and not customer_name:
+                flash('Customer name is required when a discount is applied.', 'error')
+            else:
+                invoice.customer_name = customer_name
+                invoice.tax_rate = float(request.form.get('tax_rate', DEFAULT_TAX_RATE)) / 100
+                invoice.discount_rate = discount_rate
+                invoice.payment_method = request.form.get('payment_method', '').strip()
+                invoice.notes = request.form.get('notes', '').strip()
+                invoice.calculate_totals()
+                db.session.commit()
+                flash('Invoice updated successfully!', 'success')
+
         elif action == 'complete':
             # Finalize the invoice
-            invoice.customer_name = request.form.get('customer_name', '').strip()
-            invoice.tax_rate = float(request.form.get('tax_rate', DEFAULT_TAX_RATE)) / 100
-            invoice.discount_rate = float(request.form.get('discount_rate', 0)) / 100
-            invoice.payment_method = request.form.get('payment_method', '').strip()
-            invoice.notes = request.form.get('notes', '').strip()
-            invoice.calculate_totals()
-            
-            # Mark all items in this invoice as Sold
-            for line in invoice.lines:
-                line.inventory_item.status = 'Sold'
-            
-            db.session.commit()
-            
-            flash(f'Invoice #{invoice.id} completed!', 'success')
-            return redirect(url_for('invoice_view', invoice_id=invoice.id))
+            customer_name = request.form.get('customer_name', '').strip()
+            discount_rate = float(request.form.get('discount_rate', 0)) / 100
+            if discount_rate > 0 and not customer_name:
+                flash('Customer name is required when a discount is applied.', 'error')
+            else:
+                invoice.customer_name = customer_name
+                invoice.tax_rate = float(request.form.get('tax_rate', DEFAULT_TAX_RATE)) / 100
+                invoice.discount_rate = discount_rate
+                invoice.payment_method = request.form.get('payment_method', '').strip()
+                invoice.notes = request.form.get('notes', '').strip()
+                invoice.calculate_totals()
+
+                # Mark all items in this invoice as Sold
+                for line in invoice.lines:
+                    line.inventory_item.status = 'Sold'
+
+                db.session.commit()
+
+                flash(f'Invoice #{invoice.id} completed!', 'success')
+                return redirect(url_for('invoice_view', invoice_id=invoice.id))
         
         return redirect(url_for('invoice_edit', invoice_id=invoice.id))
     

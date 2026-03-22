@@ -16,8 +16,8 @@
             <div class="card-body">
                 <form method="POST">
                     <div class="mb-3">
-                        <label for="customer_name" class="form-label">Customer Name (Optional)</label>
-                        <input type="text" class="form-control" id="customer_name" 
+                        <label for="customer_name" class="form-label" id="customer_name_label">Customer Name <span class="text-muted">(Optional)</span></label>
+                        <input type="text" class="form-control" id="customer_name"
                                name="customer_name"
                                placeholder="John Doe">
                     </div>
@@ -68,4 +68,23 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const discountSelect = document.getElementById('discount_rate');
+    const nameInput      = document.getElementById('customer_name');
+    const nameLabel      = document.getElementById('customer_name_label');
+
+    function updateNameRequired() {
+        const hasDiscount = discountSelect.value !== '0';
+        nameInput.required = hasDiscount;
+        nameLabel.innerHTML = hasDiscount
+            ? 'Customer Name <span class="text-danger">*</span>'
+            : 'Customer Name <span class="text-muted">(Optional)</span>';
+    }
+
+    discountSelect.addEventListener('change', updateNameRequired);
+    updateNameRequired();
+</script>
 {% endblock %}

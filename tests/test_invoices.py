@@ -24,6 +24,42 @@ class TestInvoiceCreate:
         assert invoice.customer_name == 'Test Customer'
         assert invoice.tax_rate == pytest.approx(0.06)
 
+    def test_create_invoice_no_name_no_discount_allowed(self, client, db):
+        response = client.post('/invoices/new', data={
+            'customer_name': '',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '0',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert Invoice.query.count() == 1  # invoice was created
+
+    def test_discount_without_name_rejected(self, client, db):
+        response = client.post('/invoices/new', data={
+            'customer_name': '',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert Invoice.query.count() == 0  # invoice was NOT created
+        assert b'Customer name is required' in response.data
+
+    def test_discount_with_name_allowed(self, client, db):
+        response = client.post('/invoices/new', data={
+            'customer_name': 'Jane Employee',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        invoice = Invoice.query.first()
+        assert invoice is not None
+        assert invoice.discount_rate == pytest.approx(0.10)
+
 
 class TestInvoiceAddItem:
     def test_add_in_stock_item_sets_pending(self, client, db, sample_item, sample_invoice):
@@ -165,6 +201,73 @@ class TestInvoiceComplete:
         assert response.status_code == 302
         assert f'/invoices/{sample_invoice.id}' in response.location
 
+    def test_complete_discount_without_name_rejected(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        response = client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'complete',
+            'customer_name': '',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert b'Customer name is required' in response.data
+        db.session.refresh(sample_item)
+        assert sample_item.status == 'Pending'  # items NOT marked sold
+
+    def test_complete_saves_customer_name(self, client, db, sample_item, sample_invoice):
+        """Name passed directly to complete action is saved (simulates JS-synced hidden field)."""
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'complete',
+            'customer_name': 'Alice Buyer',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '0',
+        })
+
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.customer_name == 'Alice Buyer'
+
+    def test_complete_discount_with_name_allowed(self, client, db, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Pending'
+        db.session.commit()
+
+        response = client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'complete',
+            'customer_name': 'Jane Employee',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        })
+
+        assert response.status_code == 302
+        db.session.refresh(sample_item)
+        assert sample_item.status == 'Sold'
+
 
 class TestInvoiceEditGet:
     def test_get_edit_form_returns_200(self, client, sample_invoice):
@@ -236,6 +339,33 @@ class TestInvoiceUpdate:
         db.session.refresh(sample_invoice)
         assert sample_invoice.tax_rate == pytest.approx(0.10)
         assert sample_invoice.tax_amount == pytest.approx(10.00)
+
+    def test_update_discount_without_name_rejected(self, client, db, sample_invoice):
+        original_name = sample_invoice.customer_name
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'update_invoice',
+            'customer_name': '',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        })
+
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.discount_rate == pytest.approx(0.0)  # not updated
+        assert sample_invoice.customer_name == original_name
+
+    def test_update_discount_with_name_allowed(self, client, db, sample_invoice):
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'update_invoice',
+            'customer_name': 'Jane Employee',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+            'discount_rate': '10',
+        })
+
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.discount_rate == pytest.approx(0.10)
+        assert sample_invoice.customer_name == 'Jane Employee'
 
 
 class TestInvoiceDelete:
