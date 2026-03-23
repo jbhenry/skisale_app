@@ -52,6 +52,15 @@ with app.app_context():
     except Exception:
         db.session.rollback()  # Column already exists — nothing to do
 
+    # Add register_id column if upgrading from an older schema
+    try:
+        db.session.execute(text(
+            'ALTER TABLE invoices ADD COLUMN register_id VARCHAR(50)'
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()  # Column already exists — nothing to do
+
     # Add surcharge/discount columns if upgrading from an older schema
     for col_sql in [
         'ALTER TABLE invoices ADD COLUMN surcharge_rate FLOAT NOT NULL DEFAULT 0.0',

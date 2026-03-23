@@ -123,6 +123,7 @@ class Invoice(db.Model):
     discount_amount = db.Column(db.Float, nullable=False, default=0.0)
     total = db.Column(db.Float, nullable=False, default=0.0)
     payment_method = db.Column(db.String(20))  # Cash, Credit, Check, etc.
+    register_id = db.Column(db.String(50))
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)

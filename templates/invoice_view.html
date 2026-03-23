@@ -45,6 +45,9 @@
                     <div class="col-md-6">
                         <p><strong>Payment Method:</strong> {{ invoice.payment_method or '—' }}</p>
                         <p><strong>Tax Rate:</strong> {{ (invoice.tax_rate * 100)|round(1) }}%</p>
+                        {% if invoice.register_id %}
+                        <p><strong>Register:</strong> {{ invoice.register_id }}</p>
+                        {% endif %}
                         {% if invoice.notes %}
                         <p><strong>Notes:</strong> {{ invoice.notes }}</p>
                         {% endif %}

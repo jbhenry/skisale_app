@@ -30,6 +30,7 @@
                         <th>Tax</th>
                         <th>Total</th>
                         <th>Payment</th>
+                        <th>Register</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
@@ -49,6 +50,7 @@
                         <td>${{ "%.2f"|format(invoice.tax_amount) }}</td>
                         <td><strong>${{ "%.2f"|format(invoice.total) }}</strong></td>
                         <td>{{ invoice.payment_method or '—' }}</td>
+                        <td>{{ invoice.register_id or '—' }}</td>
                         <td class="text-end">
                             <div class="btn-group btn-group-sm">
                                 <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id) }}" 
@@ -72,10 +74,11 @@
                 <tfoot class="table-light">
                     <tr>
                         <td colspan="4" class="text-end"><strong>Totals:</strong></td>
+
                         <td><strong>${{ "%.2f"|format(invoices|sum(attribute='subtotal')) }}</strong></td>
                         <td><strong>${{ "%.2f"|format(invoices|sum(attribute='tax_amount')) }}</strong></td>
                         <td><strong>${{ "%.2f"|format(invoices|sum(attribute='total')) }}</strong></td>
-                        <td colspan="2"></td>
+                        <td colspan="3"></td>
                     </tr>
                 </tfoot>
             </table>

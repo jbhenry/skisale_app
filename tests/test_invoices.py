@@ -745,6 +745,82 @@ class TestReleaseAbandonedInvoices:
         assert sold_item.status == 'Sold'
 
 
+class TestRegisterID:
+    def test_set_register_stores_in_session(self, client):
+        response = client.post('/set-register', data={'register_id': 'Register 1'})
+        assert response.status_code == 302
+        with client.session_transaction() as sess:
+            assert sess['register_id'] == 'Register 1'
+
+    def test_set_register_empty_clears_session(self, client):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 1'
+        client.post('/set-register', data={'register_id': ''})
+        with client.session_transaction() as sess:
+            assert 'register_id' not in sess
+
+    def test_set_register_redirects(self, client):
+        response = client.post('/set-register', data={'register_id': 'R2'})
+        assert response.status_code == 302
+
+    def test_new_invoice_stamped_with_session_register_id(self, client, db):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 3'
+        client.post('/invoices/new', data={
+            'customer_name': 'Test',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+        })
+        invoice = Invoice.query.first()
+        assert invoice is not None
+        assert invoice.register_id == 'Register 3'
+
+    def test_new_invoice_without_session_register_id_is_null(self, client, db):
+        client.post('/invoices/new', data={
+            'customer_name': 'Test',
+            'tax_rate': '6',
+            'payment_method': 'Cash',
+        })
+        invoice = Invoice.query.first()
+        assert invoice is not None
+        assert invoice.register_id is None
+
+    def test_register_id_shown_in_invoice_view(self, client, db):
+        invoice = Invoice(customer_name='Test', tax_rate=0.06,
+                          payment_method='Cash', register_id='Register 2')
+        db.session.add(invoice)
+        db.session.commit()
+        response = client.get(f'/invoices/{invoice.id}')
+        assert b'Register 2' in response.data
+
+    def test_register_id_absent_not_shown_in_invoice_view(self, client, db):
+        invoice = Invoice(customer_name='Test', tax_rate=0.06,
+                          payment_method='Cash', register_id=None)
+        db.session.add(invoice)
+        db.session.commit()
+        response = client.get(f'/invoices/{invoice.id}')
+        # "Register:" label should not appear when register_id is None
+        assert b'<strong>Register:</strong>' not in response.data
+
+    def test_register_id_shown_in_invoice_list(self, client, db):
+        invoice = Invoice(customer_name='Test', tax_rate=0.06,
+                          payment_method='Cash', register_id='Cashier Jane')
+        db.session.add(invoice)
+        db.session.commit()
+        response = client.get('/invoices')
+        assert b'Cashier Jane' in response.data
+
+    def test_navbar_shows_set_register_when_unset(self, client):
+        response = client.get('/invoices')
+        assert b'Set Register' in response.data
+
+    def test_navbar_shows_register_id_when_set(self, client):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 5'
+        response = client.get('/invoices')
+        assert b'Register 5' in response.data
+
+
 class TestCancelInvoiceButton:
     def test_cancel_button_present_on_edit_page(self, client, sample_invoice):
         response = client.get(f'/invoices/{sample_invoice.id}/edit')

@@ -108,6 +108,17 @@
                         </a>
                     </li>
                 </ul>
+                <button type="button" id="registerBtn"
+                        class="btn btn-sm me-2 {% if session.get('register_id') %}btn-outline-light{% else %}btn-warning{% endif %}"
+                        data-bs-toggle="modal" data-bs-target="#registerModal"
+                        title="Set register / user ID">
+                    <i class="bi bi-display"></i>
+                    {% if session.get('register_id') %}
+                        {{ session['register_id'] }}
+                    {% else %}
+                        Set Register
+                    {% endif %}
+                </button>
                 <button id="darkModeToggle" title="Toggle dark mode">
                     <i class="bi bi-moon-stars-fill"></i>
                 </button>
@@ -133,6 +144,32 @@
     <main class="container-fluid py-4">
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Register / User ID Modal -->
+    <div class="modal fade" id="registerModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-display"></i> Register / User ID</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('invoices.set_register') }}">
+                    <div class="modal-body">
+                        <label for="register_id_input" class="form-label">Register or cashier name</label>
+                        <input type="text" class="form-control" id="register_id_input" name="register_id"
+                               value="{{ session.get('register_id', '') }}"
+                               placeholder="e.g. Register 1, Cashier A"
+                               autofocus maxlength="50">
+                        <small class="text-muted">Saved for this session — applied to every new invoice.</small>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script>

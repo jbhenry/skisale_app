@@ -1,7 +1,7 @@
 """
 Invoice routes and abandoned-invoice cleanup.
 """
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Inventory, Invoice, InvoiceLine
 from constants import PAYMENT_METHODS, DEFAULT_TAX_RATE
@@ -31,6 +31,17 @@ def release_abandoned_invoices():
         db.session.commit()
 
 
+@invoices_bp.route('/set-register', methods=['POST'])
+def set_register():
+    """Store register/user ID in session for the duration of the session."""
+    register_id = request.form.get('register_id', '').strip()
+    if register_id:
+        session['register_id'] = register_id
+    else:
+        session.pop('register_id', None)
+    return redirect(request.referrer or url_for('invoices.invoices_list'))
+
+
 @invoices_bp.route('/invoices')
 def invoices_list():
     """Display all invoices"""
@@ -57,6 +68,7 @@ def invoice_new():
                 tax_rate=float(request.form.get('tax_rate', DEFAULT_TAX_RATE * 100)) / 100,
                 discount_rate=discount_rate,
                 payment_method=request.form.get('payment_method', '').strip(),
+                register_id=session.get('register_id'),
                 notes=request.form.get('notes', '').strip()
             )
 
