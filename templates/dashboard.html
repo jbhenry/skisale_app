@@ -66,6 +66,24 @@
         </div>
     </div>
 
+    <!-- Employee Discounts -->
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted mb-1">Employee Discounts</h6>
+                        <h2 class="text-danger mb-0">${{ "%.2f"|format(total_discounts) }}</h2>
+                        <small class="text-muted">Total discounted off sales</small>
+                    </div>
+                    <div class="text-danger" style="font-size: 3rem; opacity: 0.3;">
+                        <i class="bi bi-tag"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Sales Tax -->
     <div class="col-lg-3 col-md-6 mb-3">
         <div class="card border-info">
@@ -126,6 +144,12 @@
                                 <td><strong>Items Sold (subtotal):</strong></td>
                                 <td class="text-end">${{ "%.2f"|format(total_subtotal) }}</td>
                             </tr>
+                            {% if total_discounts > 0 %}
+                            <tr>
+                                <td style="padding-left: 20px;">└ Employee Discounts:</td>
+                                <td class="text-end text-danger">-${{ "%.2f"|format(total_discounts) }}</td>
+                            </tr>
+                            {% endif %}
                             <tr>
                                 <td style="padding-left: 20px;">└ Vendor Payouts ({{ "%.0f"|format((total_vendor_payout / total_subtotal * 100) if total_subtotal > 0 else 0) }}%):</td>
                                 <td class="text-end text-warning">${{ "%.2f"|format(total_vendor_payout) }}</td>

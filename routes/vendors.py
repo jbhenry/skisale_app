@@ -39,6 +39,7 @@ def index():
     total_sales = sum(invoice.total for invoice in all_invoices)  # Grand total with tax
     total_tax = sum(invoice.tax_amount for invoice in all_invoices)
     total_subtotal = sum(invoice.subtotal for invoice in all_invoices)  # Before tax
+    total_discounts = sum(invoice.discount_amount for invoice in all_invoices)
 
     # Calculate vendor payouts and commissions from INVOICE LINES (not just sold items)
     # This ensures we only count items that were actually sold through invoices
@@ -63,6 +64,7 @@ def index():
                          total_sales=total_sales,
                          total_tax=total_tax,
                          total_subtotal=total_subtotal,
+                         total_discounts=total_discounts,
                          total_vendor_payout=total_vendor_payout,
                          total_commission=total_commission,
                          num_invoices=len(all_invoices))

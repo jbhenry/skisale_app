@@ -462,6 +462,80 @@ class TestSalesTaxReport:
 # Database Backup  (/admin/backup-db)
 # ---------------------------------------------------------------------------
 
+class TestDiscountsReport:
+
+    @pytest.fixture()
+    def discount_invoice(self, db):
+        vendor = Vendor(first_name='Emp', last_name='Worker', commission_rate=0.20, active=True)
+        db.session.add(vendor)
+        db.session.flush()
+        item = Inventory(sku=7000001, vendor_id=vendor.id,
+                         equipment_type='Skis', price=100.00, status='Sold')
+        db.session.add(item)
+        db.session.flush()
+        inv = Invoice(
+            customer_name='Jane Employee',
+            tax_rate=0.06,
+            payment_method='Cash',
+            subtotal=100.00,
+            discount_rate=0.10,
+            discount_amount=10.00,
+            tax_amount=5.40,
+            total=95.40,
+            register_id='Register 1',
+        )
+        db.session.add(inv)
+        db.session.commit()
+        return inv
+
+    def test_returns_xlsx(self, client, discount_invoice):
+        response = client.get('/admin/report-discounts')
+        assert response.status_code == 200
+        assert response.content_type == XLSX_MIME
+
+    def test_filename_contains_date(self, client, discount_invoice):
+        response = client.get('/admin/report-discounts')
+        cd = response.headers['Content-Disposition']
+        assert f'discounts_report_{date.today().isoformat()}' in cd
+
+    def test_only_discounted_invoices_included(self, client, db, discount_invoice):
+        # Add a non-discounted invoice — should not appear in the report
+        no_disc = Invoice(customer_name='Walk-in', tax_rate=0.06,
+                          payment_method='Cash', subtotal=50.00,
+                          discount_amount=0.0, total=53.00)
+        db.session.add(no_disc)
+        db.session.commit()
+
+        response = client.get('/admin/report-discounts')
+        wb = parse_xlsx(response)
+        data_rows = [r for r in rows(wb.active) if r[0] is not None]
+        assert len(data_rows) == 1
+        assert data_rows[0][2] == 'Jane Employee'
+
+    def test_data_row_values(self, client, discount_invoice):
+        response = client.get('/admin/report-discounts')
+        wb = parse_xlsx(response)
+        ws = wb.active
+        assert ws.cell(3, 5).value == pytest.approx(100.00)   # subtotal
+        assert ws.cell(3, 7).value == pytest.approx(10.00)    # discount amount
+        assert ws.cell(3, 9).value == pytest.approx(95.40)    # total
+
+    def test_register_id_included(self, client, discount_invoice):
+        response = client.get('/admin/report-discounts')
+        wb = parse_xlsx(response)
+        ws = wb.active
+        assert ws.cell(3, 10).value == 'Register 1'  # register_id
+
+    def test_empty_db_returns_200(self, client, db):
+        response = client.get('/admin/report-discounts')
+        assert response.status_code == 200
+        assert response.content_type == XLSX_MIME
+
+    def test_link_present_on_admin_page(self, client):
+        response = client.get('/admin')
+        assert b'Employee Discounts Report' in response.data
+
+
 class TestBackupDb:
 
     def test_post_redirects_to_admin(self, client):

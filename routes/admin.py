@@ -388,6 +388,90 @@ def admin_report_salestax():
     return _xlsx_response(wb, f'salestax_report_{date.today().isoformat()}.xlsx')
 
 
+@admin_bp.route('/admin/report-discounts')
+def admin_report_discounts():
+    """Download xlsx of all invoices with a non-zero employee discount."""
+    invoices = (Invoice.query
+                .filter(Invoice.discount_amount > 0)
+                .order_by(Invoice.invoice_date)
+                .all())
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Employee Discounts'
+
+    header_font = Font(bold=True, color='FFFFFF')
+    header_fill = PatternFill('solid', fgColor='1E3C72')
+    center    = Alignment(horizontal='center')
+    money_fmt = '"$"#,##0.00'
+    thin      = Side(style='thin')
+
+    # Title row
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=11)
+    title_cell = ws.cell(1, 1, value='Employee Discounts Report')
+    title_cell.font      = Font(bold=True, size=16)
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Header row (row 2)
+    num_cols = 11
+    headers = [
+        'Invoice #', 'Date / Time', 'Customer',
+        'Payment Method', 'Subtotal', 'Discount %', 'Discount Amount',
+        'Tax', 'Total',
+        'Register ID', 'Created At',
+    ]
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=2, column=col)
+        cell.font      = header_font
+        cell.fill      = header_fill
+        cell.alignment = center
+
+    # Data rows
+    for inv in invoices:
+        ws.append([
+            inv.id,
+            inv.invoice_date,
+            inv.customer_name or '',
+            inv.payment_method or '',
+            inv.subtotal,
+            inv.discount_rate,
+            inv.discount_amount,
+            inv.tax_amount,
+            inv.total,
+            inv.register_id or '',
+            inv.created_at,
+        ])
+        r = ws.max_row
+        ws.cell(r, 2).number_format  = 'yyyy-mm-dd hh:mm'
+        ws.cell(r, 6).number_format  = '0%'
+        ws.cell(r, 11).number_format = 'yyyy-mm-dd hh:mm'
+        for col in (5, 7, 8, 9):
+            ws.cell(r, col).number_format = money_fmt
+        ws.cell(r, 1).alignment = center
+
+    # Totals row
+    if invoices:
+        data_start = 3
+        data_end   = ws.max_row
+        ws.append([])
+        total_row = ws.max_row + 1
+        ws.cell(total_row, 4, value='TOTALS:').font = Font(bold=True)
+        for col, letter in ((5, 'E'), (7, 'G'), (8, 'H'), (9, 'I')):
+            cell = ws.cell(total_row, col,
+                           value=f'=SUM({letter}{data_start}:{letter}{data_end})')
+            cell.number_format = money_fmt
+            cell.font   = Font(bold=True)
+            cell.border = Border(top=thin, bottom=Side(style='double'))
+
+    col_widths = [12, 20, 24, 18, 12, 12, 18, 12, 12, 16, 20]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A3'
+
+    return _xlsx_response(wb, f'discounts_report_{date.today().isoformat()}.xlsx')
+
+
 @admin_bp.route('/admin/backup-db', methods=['POST'])
 def admin_backup_db():
     """Create a timestamped backup of the SQLite database using the online backup API."""
