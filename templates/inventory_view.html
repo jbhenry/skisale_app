@@ -110,15 +110,53 @@
         </div>
         {% endif %}
 
-        <!-- Sales History (placeholder for future) -->
+        <!-- Sales History -->
         <div class="card mb-3">
             <div class="card-header">
                 <h5 class="mb-0"><i class="bi bi-clock-history"></i> Sales History</h5>
             </div>
-            <div class="card-body text-center text-muted py-4">
-                <i class="bi bi-receipt" style="font-size: 2rem;"></i>
-                <p class="mt-2">Sales tracking coming soon!</p>
-                <small>This will show when this item was sold and invoice details.</small>
+            <div class="card-body">
+                {% if item.invoice_line %}
+                {% set line = item.invoice_line[0] %}
+                {% set inv = line.invoice %}
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr>
+                            <td class="text-muted" style="width:35%">Invoice</td>
+                            <td>
+                                <a href="{{ url_for('invoices.invoice_view', invoice_id=inv.id) }}">#{{ inv.id }}</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Sale Date</td>
+                            <td>{{ (inv.invoice_date | localtime).strftime('%B %d, %Y at %I:%M %p') }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Sale Price</td>
+                            <td><strong class="text-success">${{ "%.2f"|format(line.price) }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Customer</td>
+                            <td>{{ inv.customer_name or 'Walk-in Customer' }}</td>
+                        </tr>
+                        <tr>
+                            <td class="text-muted">Payment Method</td>
+                            <td>{{ inv.payment_method or '—' }}</td>
+                        </tr>
+                        {% if inv.register_id %}
+                        <tr>
+                            <td class="text-muted">Register</td>
+                            <td>{{ inv.register_id }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-receipt" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0">No sales history.</p>
+                </div>
+                {% endif %}
             </div>
         </div>
 

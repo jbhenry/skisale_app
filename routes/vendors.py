@@ -57,6 +57,18 @@ def index():
             total_commission += commission
             total_vendor_payout += payout
 
+    # Payment method breakdown
+    payment_breakdown = {}
+    for invoice in all_invoices:
+        method = invoice.payment_method or 'Unknown'
+        if method not in payment_breakdown:
+            payment_breakdown[method] = {'count': 0, 'total': 0.0}
+        payment_breakdown[method]['count'] += 1
+        payment_breakdown[method]['total'] += invoice.total
+    payment_breakdown = dict(
+        sorted(payment_breakdown.items(), key=lambda x: x[1]['total'], reverse=True)
+    )
+
     return render_template('dashboard.html',
                          active_vendors=active_vendors,
                          total_inventory=total_inventory,
@@ -67,7 +79,8 @@ def index():
                          total_discounts=total_discounts,
                          total_vendor_payout=total_vendor_payout,
                          total_commission=total_commission,
-                         num_invoices=len(all_invoices))
+                         num_invoices=len(all_invoices),
+                         payment_breakdown=payment_breakdown)
 
 
 @vendors_bp.route('/vendors')
