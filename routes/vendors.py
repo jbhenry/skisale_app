@@ -5,12 +5,20 @@ import csv
 import io
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
 from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN
 
 vendors_bp = Blueprint('vendors', __name__)
+
+
+@vendors_bp.before_request
+def require_register_for_writes():
+    if request.method == 'POST':
+        if not session.get('register_id'):
+            flash('Please set your register ID before making changes.', 'error')
+            return redirect(request.referrer or url_for('vendors.vendors_list'))
 
 
 @vendors_bp.route('/')
@@ -128,7 +136,9 @@ def vendor_new():
                 commission_rate=float(request.form.get('commission_rate', 20)) / 100,
                 payment_method=request.form.get('payment_method', '').strip(),
                 notes=request.form.get('notes', '').strip(),
-                active=request.form.get('active') == 'on'
+                active=request.form.get('active') == 'on',
+                created_by=session.get('register_id'),
+                updated_by=session.get('register_id'),
             )
 
             db.session.add(vendor)
@@ -164,6 +174,7 @@ def vendor_edit(vendor_id):
             vendor.payment_method = request.form.get('payment_method', '').strip()
             vendor.notes = request.form.get('notes', '').strip()
             vendor.active = request.form.get('active') == 'on'
+            vendor.updated_by = session.get('register_id')
 
             db.session.commit()
 
@@ -184,6 +195,7 @@ def vendor_delete(vendor_id):
 
     try:
         vendor.active = False
+        vendor.updated_by = session.get('register_id')
         db.session.commit()
         flash(f'Vendor "{vendor.full_name}" deactivated successfully!', 'success')
     except Exception as e:
@@ -204,6 +216,7 @@ def vendor_reactivate(vendor_id):
 
     try:
         vendor.active = True
+        vendor.updated_by = session.get('register_id')
         db.session.commit()
         flash(f'Vendor "{vendor.full_name}" reactivated successfully!', 'success')
     except Exception as e:
@@ -345,6 +358,8 @@ def vendor_import_csv(vendor_id):
             description=description or '',
             price=price,
             status='Not In Stock',
+            created_by=session.get('register_id'),
+            updated_by=session.get('register_id'),
         )
         db.session.add(item)
         imported.append({'sku': sku, 'description': description or '—',
@@ -396,6 +411,7 @@ def vendor_checkin(vendor_id):
                 flash(f'SKU {sku} has status "{item.status}" and cannot be checked in.', 'error')
             else:
                 item.status = 'In-Stock'
+                item.updated_by = session.get('register_id')
                 db.session.commit()
                 checked_in_item = item
                 # Refresh pending list after change
@@ -444,6 +460,7 @@ def vendor_checkout(vendor_id):
                 else:
                     item.status = 'Donated'
                     action_label = 'Donated'
+                item.updated_by = session.get('register_id')
                 db.session.commit()
                 actioned_item = item
                 checkout_items = _refresh_checkout_items()
@@ -472,6 +489,7 @@ def vendor_checkout(vendor_id):
                     flash(f'SKU {sku} has status "{item.status}" and cannot be returned.', 'error')
                 else:
                     item.status = 'Returned to Vendor'
+                    item.updated_by = session.get('register_id')
                     db.session.commit()
                     actioned_item = item
                     action_label = 'Returned'

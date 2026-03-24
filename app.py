@@ -52,6 +52,19 @@ with app.app_context():
     except Exception:
         db.session.rollback()  # Column already exists — nothing to do
 
+    # Add created_by/updated_by columns if upgrading from an older schema
+    for col_sql in [
+        'ALTER TABLE vendors ADD COLUMN created_by VARCHAR(50)',
+        'ALTER TABLE vendors ADD COLUMN updated_by VARCHAR(50)',
+        'ALTER TABLE inventory ADD COLUMN created_by VARCHAR(50)',
+        'ALTER TABLE inventory ADD COLUMN updated_by VARCHAR(50)',
+    ]:
+        try:
+            db.session.execute(text(col_sql))
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+
     # Add register_id column if upgrading from an older schema
     try:
         db.session.execute(text(

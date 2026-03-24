@@ -2,12 +2,20 @@
 Inventory routes.
 """
 from sqlalchemy import cast, String
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Vendor, Inventory
 from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES
 
 inventory_bp = Blueprint('inventory', __name__)
+
+
+@inventory_bp.before_request
+def require_register_for_writes():
+    if request.method == 'POST':
+        if not session.get('register_id'):
+            flash('Please set your register ID before making changes.', 'error')
+            return redirect(request.referrer or url_for('inventory.inventory_list'))
 
 
 @inventory_bp.route('/inventory')
@@ -74,7 +82,9 @@ def inventory_new():
                 price=float(request.form['price']),
                 status=request.form['status'],
                 donate_if_not_sold=request.form.get('donate_if_not_sold') == 'on',
-                notes=request.form.get('notes', '').strip()
+                notes=request.form.get('notes', '').strip(),
+                created_by=session.get('register_id'),
+                updated_by=session.get('register_id'),
             )
 
             db.session.add(item)
@@ -116,6 +126,7 @@ def inventory_edit(item_id):
             item.status = request.form['status']
             item.donate_if_not_sold = request.form.get('donate_if_not_sold') == 'on'
             item.notes = request.form.get('notes', '').strip()
+            item.updated_by = session.get('register_id')
 
             db.session.commit()
 

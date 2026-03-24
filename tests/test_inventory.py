@@ -114,6 +114,64 @@ class TestInventoryView:
         assert b'1234567' in response.data
 
 
+class TestInventoryRegisterStamping:
+    def test_create_item_stamps_created_by(self, client, db, sample_vendor):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 1'
+        client.post('/inventory/new', data={
+            'sku': '9000001',
+            'vendor_id': str(sample_vendor.id),
+            'equipment_type': 'Skis',
+            'price': '100',
+            'status': 'In-Stock',
+        })
+        item = Inventory.query.filter_by(sku=9000001).first()
+        assert item.created_by == 'Register 1'
+        assert item.updated_by == 'Register 1'
+
+    def test_create_item_without_register_is_blocked(self, client, db, sample_vendor):
+        with client.session_transaction() as sess:
+            sess.pop('register_id', None)
+        response = client.post('/inventory/new', data={
+            'sku': '9000002',
+            'vendor_id': str(sample_vendor.id),
+            'equipment_type': 'Skis',
+            'price': '100',
+            'status': 'In-Stock',
+        })
+        assert response.status_code == 302
+        assert Inventory.query.filter_by(sku=9000002).first() is None
+
+    def test_edit_item_stamps_updated_by(self, client, db, sample_item):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 2'
+        client.post(f'/inventory/{sample_item.id}/edit', data={
+            'sku': str(sample_item.sku),
+            'vendor_id': str(sample_item.vendor_id),
+            'equipment_type': sample_item.equipment_type,
+            'price': str(sample_item.price),
+            'status': sample_item.status,
+        })
+        db.session.refresh(sample_item)
+        assert sample_item.updated_by == 'Register 2'
+
+    def test_edit_item_does_not_change_created_by(self, client, db, sample_item):
+        sample_item.created_by = 'Register 1'
+        db.session.commit()
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 2'
+        client.post(f'/inventory/{sample_item.id}/edit', data={
+            'sku': str(sample_item.sku),
+            'vendor_id': str(sample_item.vendor_id),
+            'equipment_type': sample_item.equipment_type,
+            'price': str(sample_item.price),
+            'status': sample_item.status,
+        })
+        db.session.refresh(sample_item)
+        assert sample_item.created_by == 'Register 1'
+        assert sample_item.updated_by == 'Register 2'
+
+
 class TestInventoryAPI:
     def test_api_returns_all_items(self, client, sample_item):
         response = client.get('/api/inventory')

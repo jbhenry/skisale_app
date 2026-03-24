@@ -775,15 +775,16 @@ class TestRegisterID:
         assert invoice is not None
         assert invoice.register_id == 'Register 3'
 
-    def test_new_invoice_without_session_register_id_is_null(self, client, db):
-        client.post('/invoices/new', data={
+    def test_create_invoice_without_register_is_blocked(self, client, db):
+        with client.session_transaction() as sess:
+            sess.pop('register_id', None)
+        response = client.post('/invoices/new', data={
             'customer_name': 'Test',
             'tax_rate': '6',
             'payment_method': 'Cash',
         })
-        invoice = Invoice.query.first()
-        assert invoice is not None
-        assert invoice.register_id is None
+        assert response.status_code == 302
+        assert Invoice.query.count() == 0
 
     def test_register_id_shown_in_invoice_view(self, client, db):
         invoice = Invoice(customer_name='Test', tax_rate=0.06,
@@ -811,6 +812,8 @@ class TestRegisterID:
         assert b'Cashier Jane' in response.data
 
     def test_navbar_shows_set_register_when_unset(self, client):
+        with client.session_transaction() as sess:
+            sess.pop('register_id', None)
         response = client.get('/invoices')
         assert b'Set Register' in response.data
 

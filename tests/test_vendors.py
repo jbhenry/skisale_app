@@ -481,6 +481,56 @@ class TestVendorCheckout:
                b'Checkout Boot' not in response.data
 
 
+class TestVendorRegisterStamping:
+    def test_create_vendor_stamps_created_by(self, client, db):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 1'
+        client.post('/vendors/new', data={
+            'first_name': 'Tom', 'last_name': 'Test',
+            'commission_rate': '20', 'active': 'on',
+        })
+        vendor = Vendor.query.filter_by(last_name='Test').first()
+        assert vendor.created_by == 'Register 1'
+        assert vendor.updated_by == 'Register 1'
+
+    def test_create_vendor_without_register_is_blocked(self, client, db):
+        with client.session_transaction() as sess:
+            sess.pop('register_id', None)
+        response = client.post('/vendors/new', data={
+            'first_name': 'Tom', 'last_name': 'NoReg',
+            'commission_rate': '20', 'active': 'on',
+        })
+        assert response.status_code == 302
+        assert Vendor.query.filter_by(last_name='NoReg').first() is None
+
+    def test_edit_vendor_stamps_updated_by(self, client, db, sample_vendor):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 2'
+        client.post(f'/vendors/{sample_vendor.id}/edit', data={
+            'first_name': sample_vendor.first_name,
+            'last_name': sample_vendor.last_name,
+            'commission_rate': '20', 'active': 'on',
+        })
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.updated_by == 'Register 2'
+
+    def test_deactivate_vendor_stamps_updated_by(self, client, db, sample_vendor):
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 3'
+        client.post(f'/vendors/{sample_vendor.id}/delete')
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.updated_by == 'Register 3'
+
+    def test_reactivate_vendor_stamps_updated_by(self, client, db, sample_vendor):
+        sample_vendor.active = False
+        db.session.commit()
+        with client.session_transaction() as sess:
+            sess['register_id'] = 'Register 4'
+        client.post(f'/vendors/{sample_vendor.id}/reactivate')
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.updated_by == 'Register 4'
+
+
 class TestVendorReactivate:
     def test_reactivate_sets_active(self, client, db, sample_vendor):
         sample_vendor.active = False

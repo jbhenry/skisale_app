@@ -33,6 +33,8 @@ class Vendor(db.Model):
     
     notes = db.Column(db.Text)
     active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.String(50))
+    updated_by = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
     
@@ -84,6 +86,8 @@ class Inventory(db.Model):
     
     donate_if_not_sold = db.Column(db.Boolean, default=False, nullable=False)
     notes = db.Column(db.Text)
+    created_by = db.Column(db.String(50))
+    updated_by = db.Column(db.String(50))
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
 

@@ -263,9 +263,9 @@
             <div class="card-body">
                 <small class="text-muted">
                     <i class="bi bi-clock-history"></i>
-                    Created: {{ (vendor.created_at | localtime).strftime('%B %d, %Y at %I:%M %p') if vendor.created_at else 'Unknown' }}
+                    Created: {{ (vendor.created_at | localtime).strftime('%B %d, %Y at %I:%M %p') if vendor.created_at else 'Unknown' }}{% if vendor.created_by %} by {{ vendor.created_by }}{% endif %}
                     {% if vendor.updated_at and vendor.updated_at != vendor.created_at %}
-                    <br>Last updated: {{ (vendor.updated_at | localtime).strftime('%B %d, %Y at %I:%M %p') }}
+                    <br>Last updated: {{ (vendor.updated_at | localtime).strftime('%B %d, %Y at %I:%M %p') }}{% if vendor.updated_by %} by {{ vendor.updated_by }}{% endif %}
                     {% endif %}
                 </small>
             </div>

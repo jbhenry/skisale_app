@@ -127,9 +127,9 @@
             <div class="card-body">
                 <small class="text-muted">
                     <i class="bi bi-clock-history"></i>
-                    Created: {{ (item.created_at | localtime).strftime('%B %d, %Y at %I:%M %p') if item.created_at else 'Unknown' }}
+                    Created: {{ (item.created_at | localtime).strftime('%B %d, %Y at %I:%M %p') if item.created_at else 'Unknown' }}{% if item.created_by %} by {{ item.created_by }}{% endif %}
                     {% if item.updated_at and item.updated_at != item.created_at %}
-                    <br>Last updated: {{ (item.updated_at | localtime).strftime('%B %d, %Y at %I:%M %p') }}
+                    <br>Last updated: {{ (item.updated_at | localtime).strftime('%B %d, %Y at %I:%M %p') }}{% if item.updated_by %} by {{ item.updated_by }}{% endif %}
                     {% endif %}
                 </small>
             </div>

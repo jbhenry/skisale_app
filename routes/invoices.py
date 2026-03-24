@@ -9,6 +9,14 @@ from constants import PAYMENT_METHODS, DEFAULT_TAX_RATE
 invoices_bp = Blueprint('invoices', __name__)
 
 
+@invoices_bp.before_request
+def require_register_for_writes():
+    if request.method == 'POST' and request.endpoint != 'invoices.set_register':
+        if not session.get('register_id'):
+            flash('Please set your register ID before making changes.', 'error')
+            return redirect(request.referrer or url_for('invoices.invoices_list'))
+
+
 def release_abandoned_invoices():
     """Release any items left in Pending status from a previous session.
 

@@ -51,7 +51,10 @@ def app():
 
 @pytest.fixture()
 def client(app):
-    return flask_app.test_client()
+    c = flask_app.test_client()
+    with c.session_transaction() as sess:
+        sess['register_id'] = 'Test Register'
+    return c
 
 
 @pytest.fixture()
