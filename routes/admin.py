@@ -6,6 +6,7 @@ import io
 import os
 import sqlite3
 from datetime import date, datetime
+from itertools import groupby
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -470,6 +471,111 @@ def admin_report_discounts():
     ws.freeze_panes = 'A3'
 
     return _xlsx_response(wb, f'discounts_report_{date.today().isoformat()}.xlsx')
+
+
+@admin_bp.route('/admin/report-sales-by-register')
+def admin_report_sales_by_register():
+    """Download xlsx of sales grouped by register ID with per-register subtotals."""
+    invoices = (Invoice.query
+                .order_by(Invoice.register_id, Invoice.invoice_date)
+                .all())
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Sales by Register'
+
+    header_font   = Font(bold=True, color='FFFFFF')
+    header_fill   = PatternFill('solid', fgColor='1E3C72')
+    subtotal_font = Font(bold=True)
+    subtotal_fill = PatternFill('solid', fgColor='D9E1F2')
+    center    = Alignment(horizontal='center')
+    money_fmt = '"$"#,##0.00'
+    thin      = Side(style='thin')
+    num_cols  = 8
+
+    # Title row
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
+    title_cell = ws.cell(1, 1, value='Sales by Register')
+    title_cell.font      = Font(bold=True, size=16)
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Header row (row 2)
+    headers = [
+        'Invoice #', 'Date / Time', 'Customer',
+        'Payment Method', 'Subtotal', 'Discount', 'Tax', 'Total',
+    ]
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=2, column=col)
+        cell.font      = header_font
+        cell.fill      = header_fill
+        cell.alignment = center
+
+    grand_subtotal = 0.0
+    grand_discount = 0.0
+    grand_tax      = 0.0
+    grand_total    = 0.0
+
+    for register_id, group in groupby(invoices, key=lambda inv: inv.register_id or '(No Register)'):
+        group_invoices = list(group)
+        grp_subtotal = grp_discount = grp_tax = grp_total = 0.0
+
+        for inv in group_invoices:
+            ws.append([
+                inv.id,
+                inv.invoice_date,
+                inv.customer_name or '',
+                inv.payment_method or '',
+                inv.subtotal,
+                inv.discount_amount,
+                inv.tax_amount,
+                inv.total,
+            ])
+            r = ws.max_row
+            ws.cell(r, 1).alignment = center
+            ws.cell(r, 2).number_format = 'yyyy-mm-dd hh:mm'
+            for col in (5, 6, 7, 8):
+                ws.cell(r, col).number_format = money_fmt
+
+            grp_subtotal += inv.subtotal
+            grp_discount += inv.discount_amount
+            grp_tax      += inv.tax_amount
+            grp_total    += inv.total
+
+        # Per-register subtotal row
+        n = len(group_invoices)
+        label = f'{register_id}  —  {n} invoice{"s" if n != 1 else ""}'
+        ws.append([label, '', '', 'SUBTOTAL:', grp_subtotal, grp_discount, grp_tax, grp_total])
+        r = ws.max_row
+        for col in range(1, num_cols + 1):
+            ws.cell(r, col).font = subtotal_font
+            ws.cell(r, col).fill = subtotal_fill
+        for col in (5, 6, 7, 8):
+            ws.cell(r, col).number_format = money_fmt
+
+        grand_subtotal += grp_subtotal
+        grand_discount += grp_discount
+        grand_tax      += grp_tax
+        grand_total    += grp_total
+
+    # Grand total row
+    if invoices:
+        ws.append([])
+        ws.append(['', '', '', 'GRAND TOTAL:', grand_subtotal, grand_discount, grand_tax, grand_total])
+        r = ws.max_row
+        bold = Font(bold=True)
+        for col in range(1, num_cols + 1):
+            ws.cell(r, col).font = bold
+        for col in (5, 6, 7, 8):
+            ws.cell(r, col).number_format = money_fmt
+            ws.cell(r, col).border = Border(top=thin, bottom=Side(style='double'))
+
+    col_widths = [12, 20, 24, 18, 12, 12, 12, 12]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A3'
+
+    return _xlsx_response(wb, f'sales_by_register_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/backup-db', methods=['POST'])
