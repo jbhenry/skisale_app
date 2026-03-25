@@ -8,7 +8,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
-from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN
+from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN, COMMISSION_RATES, VENDOR_PAYMENT_METHODS
 
 vendors_bp = Blueprint('vendors', __name__)
 
@@ -166,7 +166,9 @@ def vendor_new():
             db.session.rollback()
             flash(f'Error creating vendor: {str(e)}', 'error')
 
-    return render_template('vendor_form.html', vendor=None, action='New')
+    return render_template('vendor_form.html', vendor=None, action='New',
+                           commission_rates=COMMISSION_RATES,
+                           vendor_payment_methods=VENDOR_PAYMENT_METHODS)
 
 
 @vendors_bp.route('/vendors/<int:vendor_id>/edit', methods=['GET', 'POST'])
@@ -200,7 +202,9 @@ def vendor_edit(vendor_id):
             db.session.rollback()
             flash(f'Error updating vendor: {str(e)}', 'error')
 
-    return render_template('vendor_form.html', vendor=vendor, action='Edit')
+    return render_template('vendor_form.html', vendor=vendor, action='Edit',
+                           commission_rates=COMMISSION_RATES,
+                           vendor_payment_methods=VENDOR_PAYMENT_METHODS)
 
 
 @vendors_bp.route('/vendors/<int:vendor_id>/delete', methods=['POST'])

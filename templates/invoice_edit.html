@@ -117,7 +117,7 @@
                                 <label for="discount_rate" class="form-label">Discount</label>
                                 <select class="form-select" id="discount_rate" name="discount_rate">
                                     <option value="0" {% if invoice.discount_rate == 0 %}selected{% endif %}>No discount (0%)</option>
-                                    <option value="10" {% if invoice.discount_rate == 0.10 %}selected{% endif %}>Employee discount (10%)</option>
+                                    <option value="{{ employee_discount_pct }}" {% if invoice.discount_rate == employee_discount_pct / 100 %}selected{% endif %}>Employee discount ({{ employee_discount_pct }}%)</option>
                                 </select>
                             </div>
 

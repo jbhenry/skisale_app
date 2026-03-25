@@ -4,7 +4,7 @@ Invoice routes and abandoned-invoice cleanup.
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Inventory, Invoice, InvoiceLine
-from constants import PAYMENT_METHODS, DEFAULT_TAX_RATE
+from constants import PAYMENT_METHODS, DEFAULT_TAX_RATE, EMPLOYEE_DISCOUNT_RATE
 
 invoices_bp = Blueprint('invoices', __name__)
 
@@ -69,7 +69,8 @@ def invoice_new():
                 return render_template('invoice_form.html',
                                        invoice=None,
                                        payment_methods=PAYMENT_METHODS,
-                                       default_tax_rate=DEFAULT_TAX_RATE * 100)
+                                       default_tax_rate=DEFAULT_TAX_RATE * 100,
+                                       employee_discount_pct=int(EMPLOYEE_DISCOUNT_RATE * 100))
             # Create invoice
             invoice = Invoice(
                 customer_name=customer_name,
@@ -94,7 +95,8 @@ def invoice_new():
     return render_template('invoice_form.html',
                          invoice=None,
                          payment_methods=PAYMENT_METHODS,
-                         default_tax_rate=DEFAULT_TAX_RATE * 100)
+                         default_tax_rate=DEFAULT_TAX_RATE * 100,
+                         employee_discount_pct=int(EMPLOYEE_DISCOUNT_RATE * 100))
 
 
 @invoices_bp.route('/invoices/<int:invoice_id>/edit', methods=['GET', 'POST'])
@@ -200,7 +202,8 @@ def invoice_edit(invoice_id):
                          invoice=invoice,
                          available_items=available_items,
                          payment_methods=PAYMENT_METHODS,
-                         default_tax_rate=DEFAULT_TAX_RATE * 100)
+                         default_tax_rate=DEFAULT_TAX_RATE * 100,
+                         employee_discount_pct=int(EMPLOYEE_DISCOUNT_RATE * 100))
 
 
 @invoices_bp.route('/invoices/<int:invoice_id>')

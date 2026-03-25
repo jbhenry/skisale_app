@@ -38,8 +38,26 @@ PAYMENT_METHODS = [
     'Venmo',
 ]
 
+VENDOR_PAYMENT_METHODS = [
+    'Cash',
+    'Check',
+    'PayPal',
+    'Venmo',
+]
+
 # Default sales tax rate (can be changed per invoice)
 DEFAULT_TAX_RATE = 0.06  # 6%
+
+# Employee discount rate applied when an employee discount is selected
+EMPLOYEE_DISCOUNT_RATE = 0.10  # 10%
+
+# Available vendor commission rates: (integer_pct, display_label)
+# The first entry is the default for new vendors.
+COMMISSION_RATES = [
+    (15,  '15% — Employees'),
+    (23,  '23% — General Public'),
+    (100, '100% — MBSP Only'),
+]
 
 # Organization info printed on checks — update before printing
 ORG_NAME  = 'Mt. Brighton Ski Patrol Ski Swap'
