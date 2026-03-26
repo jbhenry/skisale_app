@@ -47,6 +47,14 @@ Use this to prepare vendor checks.
 
 Downloads an XLSX report of sales tax collected, broken out by invoice.
 
+### Employee Discounts Report
+
+Downloads an XLSX list of every invoice with a non-zero discount amount, including customer name, payment method, discount percentage, and totals.
+
+### Sales by Register Report
+
+Downloads an XLSX list of all invoices grouped by register ID, with per-register subtotals and a grand total. Invoices with no register set appear under "(No Register)".
+
 ---
 
 ## Initialize for New Event
@@ -75,11 +83,11 @@ See [operations.md](operations.md) for the full vendor lifecycle.
 
 ## Changing Tax or Surcharge Rates
 
-Rates are defined as constants in `app.py` and require a code change:
+Rates are defined as constants in `constants.py` and require a code change:
 
 ```python
-DEFAULT_TAX_RATE = 0.06   # line ~75 — change to new rate
-SURCHARGE_RATE   = 0.03   # models.py line ~13
+DEFAULT_TAX_RATE = 0.06   # sales tax applied to all new invoices
+SURCHARGE_RATE   = 0.03   # applied automatically for Credit Card and Venmo (in models.py)
 ```
 
 After changing, restart the server. Existing invoices retain the rate they were created with.
@@ -88,6 +96,23 @@ After changing, restart the server. Existing invoices retain the rate they were 
 
 ## Discount Rates
 
-The employee/volunteer discount is a fixed 10% applied at invoice creation.
-To change the available rates, edit the dropdown options in `templates/invoice_form.html`
-and `templates/invoice_edit.html`.
+The employee/volunteer discount rate is defined as `EMPLOYEE_DISCOUNT_RATE` in `constants.py`
+(currently 10%). Changing it there updates the invoice form dropdown and all calculations
+automatically.
+
+---
+
+## Commission Rates
+
+Available commission rate tiers are defined as `COMMISSION_RATES` in `constants.py`:
+
+```python
+COMMISSION_RATES = [
+    (15,  '15% — Employees'),
+    (23,  '23% — General Public'),
+    (100, '100% — MBSP Only'),
+]
+```
+
+Each entry is `(integer_pct, display_label)`. The vendor form dropdown is populated from
+this list. New vendors default to 23% (General Public).

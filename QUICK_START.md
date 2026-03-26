@@ -23,15 +23,16 @@ python init_db.py
 
 1. Open the consignor's record — **Consignors → [Name]**
 2. Click **Check In Items**
-3. Scan each item's barcode (or type the SKU). Items are marked **In-Stock**.
+3. Scan each item's barcode (or type the SKU). Select Equipment type from the drop-down. Enter Description and price. Items are marked **In-Stock**.
 4. Print the check-in receipt for the consignor.
 
 ### 2. Selling Items (Point of Sale)
 
-1. Go to **Invoices → New Invoice**
-2. Enter customer name, payment method, and tax rate
-3. Scan item barcodes to add them to the cart — items move to **Pending**
-4. Click **Complete Invoice** — items move to **Sold**, receipt is available to print
+1. Set your **Register ID** — click the register button in the navbar (required before any sales)
+2. Go to **Invoices → New Invoice**
+3. Enter customer name (required when employee discount given, optional for all others), payment method, and tax rate
+4. Scan item barcodes to add them to the cart — items move to **Pending**
+5. Click **Complete Invoice** — items move to **Sold**, receipt is available to print
 
 Note: Credit Card and Venmo payments automatically add a 3% surcharge.
 
@@ -56,6 +57,8 @@ All reports are on the **Admin** page under **Close-Out**:
 | Remaining Inventory | xlsx — all items still In-Stock |
 | Donated Items | xlsx — all items marked Donated |
 | Sales Tax Report | xlsx — one row per invoice with tax collected |
+| Employee Discounts Report | xlsx — all invoices with a non-zero discount |
+| Sales by Register Report | xlsx — all invoices grouped by register ID with subtotals |
 
 ---
 
@@ -90,7 +93,7 @@ waitress-serve --host=0.0.0.0 --port=5000 app:app
 Consignors → New Consignor. The Vendor ID is assigned automatically.
 
 **How do I change a commission rate?**
-Edit the consignor record. Each consignor has their own rate (default 20%).
+Edit the consignor record. Each consignor has their own rate (default 23% — General Public).
 
 **An item was scanned into the wrong invoice — how do I fix it?**
 Open the invoice, remove the item (it returns to In-Stock), then add it to the correct invoice.

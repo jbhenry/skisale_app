@@ -14,7 +14,9 @@ Represents a person consigning items for sale.
 | `first_name`, `last_name` | String | Combined as `full_name` property |
 | `email`, `phone` | String | Optional contact info |
 | `commission_rate` | Float | Default `0.23` (org keeps 23%, vendor gets 77%) |
+| `payment_method` | String | Preferred payout method (Cash, Check, PayPal, Venmo, Zelle, Bank Transfer) |
 | `active` | Boolean | Soft delete; inactive vendors hidden by default |
+| `created_by`, `updated_by` | String | Register ID of the session that created/last updated the record |
 
 ### Inventory
 
@@ -27,8 +29,9 @@ Represents a single item consigned by a vendor.
 | `equipment_type` | String | Ski, Boot, Binding, Pole, Helmet, Outerwear, Goggle, Other |
 | `description` | String | Optional free-text |
 | `price` | Float | Asking price set by vendor |
-| `status` | String | `In-Stock`, `Pending`, `Sold`, `Returned`, `Donated` |
+| `status` | String | `In-Stock`, `Pending`, `Sold`, `Returned to Vendor`, `Donated`, `Rejected` |
 | `donate_if_unsold` | Boolean | Vendor preference if item doesn't sell |
+| `created_by`, `updated_by` | String | Register ID of the session that created/last updated the record |
 
 ### Invoice
 
@@ -47,6 +50,7 @@ Represents a completed or in-progress sale.
 | `tax_amount` | Float | `(subtotal − discount) × tax_rate` |
 | `surcharge_amount` | Float | `(subtotal − discount) × surcharge_rate` |
 | `total` | Float | `subtotal − discount + tax + surcharge` |
+| `register_id` | String | Register/cashier ID from the browser session that created the invoice |
 
 ### InvoiceLine
 
@@ -95,7 +99,7 @@ the discount/payment method changes.
                           check-out day
                       ┌──────────┴──────────┐
                       ▼                     ▼
-                  Returned              Donated
+               Returned to Vendor        Donated
 ```
 
 ---

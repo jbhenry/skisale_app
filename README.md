@@ -14,7 +14,10 @@ Flask web application for managing consignment ski sales — consignors, invento
   - Remaining Inventory — all In-Stock items
   - Donated Items — all items marked Donated
   - Sales Tax Report — one row per invoice with subtotal, tax rate, tax collected, total
-- **Check printing** — print-ready PDF of vendor payout checks, 3-up per page
+  - Employee Discounts Report — all invoices with a non-zero discount amount
+  - Sales by Register Report — all invoices grouped by register ID with per-register subtotals
+- **Check printing** — print-ready PDF of vendor payout checks, 1 check per page
+- **Register ID** — per-session register/cashier identifier stamped on invoices; required before any write operation
 - **Admin** — on-demand database backup, new-sale initialization
 
 ## Tech Stack
@@ -55,7 +58,7 @@ python -m pytest tests/ -q      # full suite, quiet
 python -m pytest tests/test_admin.py -v   # single file
 ```
 
-92 tests, all isolated with in-memory SQLite.
+227 tests, all isolated with in-memory SQLite.
 
 ## Production Deployment
 
@@ -74,20 +77,26 @@ waitress-serve --host=0.0.0.0 --port=5000 app:app
 
 ```
 skisale_app/
-├── app.py                  # All Flask routes (~1300 lines)
+├── app.py                  # Flask app factory, startup migrations, blueprint registration
 ├── models.py               # SQLAlchemy models: Vendor, Inventory, Invoice, InvoiceLine
+├── constants.py            # Shared constants: tax rate, surcharge, commission rates, payment methods
 ├── init_db.py              # Sample data loader
 ├── requirements.txt
 ├── pytest.ini
+├── routes/                 # Flask blueprints (one file per domain)
+│   ├── vendors.py
+│   ├── inventory.py
+│   ├── invoices.py
+│   └── admin.py
 ├── tests/
-│   ├── conftest.py         # Fixtures: app, client, db, sample_vendor, sample_item, sample_invoice
+│   ├── conftest.py         # Fixtures: app, client (with register_id), db, sample_vendor, sample_item, sample_invoice
 │   ├── test_models.py
 │   ├── test_vendors.py
 │   ├── test_inventory.py
 │   ├── test_invoices.py
 │   └── test_admin.py
 ├── templates/              # Jinja2 + Bootstrap 5
-│   ├── base.html
+│   ├── base.html           # Navbar with register ID modal
 │   ├── dashboard.html
 │   ├── admin.html
 │   ├── vendors_list.html / vendor_form.html / vendor_view.html
@@ -97,6 +106,13 @@ skisale_app/
 │   ├── inventory_list.html / inventory_form.html / inventory_view.html
 │   ├── invoices_list.html / invoice_form.html / invoice_edit.html
 │   ├── invoice_view.html / invoice_receipt.html
+├── docs/                   # Documentation
+│   ├── admin-guide.md      # Admin panel, reports, rate configuration
+│   ├── data-model.md       # Models, business rules, invoice calculation
+│   ├── hardwaresetup.md    # Physical hardware and network setup
+│   ├── operations.md       # Full event lifecycle (setup through payout)
+│   ├── setup.md            # Installation and configuration
+│   └── user-guide.md       # Cashier/volunteer reference
 └── var/
     └── app-instance/
         ├── skisale.db
@@ -123,3 +139,5 @@ In-Stock            → (vendor checkout) → Donated
 - 3% surcharge applied automatically for Credit Card and Venmo payments
 - Dashboard payouts are calculated from invoice lines, not from inventory status
 - Vendors are soft-deleted (active=False); inventory is hard-deleted
+- Register ID (set once per browser session) is stamped on invoices and all vendor/inventory writes; required before any POST operation
+- `created_by` / `updated_by` tracked on Vendor and Inventory records using the session register ID

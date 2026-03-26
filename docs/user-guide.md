@@ -11,19 +11,20 @@ The app is typically available at **http://\<hostname\>:5000** on the local netw
 
 ## Processing a Sale
 
-1. Click **New Sale** on the Dashboard or the Invoices page
-2. Enter the customer's name (optional but helpful for returns/questions)
-3. Select the **Payment Method**:
+1. Set your **Register ID** — click the register button in the top navbar (yellow if unset). You only need to do this once per browser session.
+2. Click **New Sale** on the Dashboard or the Invoices page
+3. Enter the customer's name (optional but helpful for returns/questions)
+4. Select the **Payment Method**:
    - Cash, Check — no surcharge
    - Credit Card, Venmo — a 3% surcharge is added automatically
-4. Apply a **Discount** if the customer is an employee or volunteer:
+5. Apply a **Discount** if the customer is an employee or volunteer:
    - Select "Employee discount (10%)" from the dropdown
-5. Add items by typing or scanning the **SKU number** and clicking **Add Item**
+6. Add items by typing or scanning the **SKU number** and clicking **Add Item**
    - The item description and price appear in the cart
    - Items must be **In-Stock** to be added
-6. Review the totals (subtotal, discount if any, tax, surcharge if any, total)
-7. Click **Complete Sale**
-8. On the invoice view page, click **Print Receipt** to open the receipt and print it
+7. Review the totals (subtotal, discount if any, tax, surcharge if any, total)
+8. Click **Complete Sale**
+9. On the invoice view page, click **Print Receipt** to open the receipt and print it
 
 ---
 

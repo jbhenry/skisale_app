@@ -37,14 +37,19 @@ The app will be available at http://localhost:5000.
 
 ## Configuration
 
-Key constants are defined at the top of `app.py`:
+Key constants are defined in `constants.py`:
 
 | Constant | Default | Description |
 |----------|---------|-------------|
-| `DEFAULT_TAX_RATE` | `0.06` (6%) | Sales tax rate applied to all invoices |
-| `SURCHARGE_RATE` | `0.03` (3%) | Applied to Credit Card and Venmo payments |
+| `DEFAULT_TAX_RATE` | `0.06` (6%) | Sales tax rate applied to all new invoices |
+| `EMPLOYEE_DISCOUNT_RATE` | `0.10` (10%) | Discount rate for the employee/volunteer discount |
+| `COMMISSION_RATES` | 15%, 23%, 100% | Available vendor commission tiers with labels |
+| `VENDOR_PAYMENT_METHODS` | Check, Cash, … | Vendor payout method options |
+| `PAYMENT_METHODS` | Credit Card, Cash, … | Customer payment method options |
 
-These are code-level constants, not environment variables. Edit `app.py` to change them.
+`SURCHARGE_RATE` (3%) is defined in `models.py` and applied automatically for Credit Card and Venmo payments.
+
+These are code-level constants, not environment variables. Edit the relevant file and restart the server to change them.
 
 ## Database
 

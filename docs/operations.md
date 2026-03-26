@@ -17,7 +17,7 @@ from pre-event setup through vendor payouts.
 
 - Add vendors via **Vendors → New Vendor**
 - Assign each vendor a unique ID (auto-incremented)
-- Set the commission rate (default: 20% to the organization)
+- Set the commission rate (default: 23% — General Public)
 - Print or distribute SKU ranges to vendors so they can tag their items
 
 ---
@@ -39,6 +39,7 @@ See [user-guide.md](user-guide.md) for CSV format requirements.
 
 ## 3. Sale Day: Processing Sales
 
+- Set your **Register ID** from the navbar (required once per browser session before making any changes)
 - Create a new sale via **Invoices → New Sale** or the **Dashboard** button
 - Add items by SKU; items move to **Pending** status when added to a cart
 - Select payment method (Cash, Check, Credit Card, Venmo)
@@ -52,7 +53,7 @@ See [user-guide.md](user-guide.md) for CSV format requirements.
 ## 4. Post-Sale: Checkout & Payouts
 
 - Navigate to each vendor's page → **Check Out Items**
-- Scan or select items to mark as **Returned** (items not sold that the vendor is
+- Scan or select items to mark as **Returned to Vendor** (items not sold that the vendor is
   picking up) or **Donated** (left for the organization to keep/discard)
 - Print the **Payout Receipt** — it shows items sold, commission withheld, and net payout
 - Use **Admin → Payout Report** to download an XLSX spreadsheet of all vendor payouts
