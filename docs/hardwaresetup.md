@@ -1,5 +1,7 @@
 # Hardware Setup & Installation
 
+This document details the specific hardware and configurations we use at Mt. Brighton Ski Patrol's swap. Where specific commands are documented here, they are specific to running under native Windows. Other documents in this repository may show commands for a Linux, MacOS or WSL environment.
+
 ## Equipment Inventory
 
 We currently use the following hardware to run the swap:
@@ -35,11 +37,11 @@ Assuming a Windows machine:
     * Set the closest Rongta as the default printer. 
 1. Create a shortcut on the desktop to the server URL **http://\<hostname\>:5000**, where \<hostname\> is the IP address of the server machine. 
 
-We've only had Windows laptops so far, but a Mac or Linux machine should work just as well for a workstation. The only requirements are a web browser, access to our LAN, and drivers for our printers. Setup would be very similar to above. 
+We've only had Windows laptops so far, but a Linux, Mac, or Chromebook machine should work just as well for a workstation. The only requirements are a web browser, access to our LAN, and drivers for our printers. Setup would be very similar to above. An iPad or other tablet might also work as a workstation, with the caviat that printing might not work as designed due to lack of drivers for our printers. This has not been tested. 
 
 ## Setup a new server
 
-Setting up a new server machine is a little involved. The below again assumes a Windows machine is being used. Setup for Linux or Mac will be different.
+Setting up a new server machine is a little more involved. The below again assumes a Windows machine is being used. Setup for Linux or Mac will be different.
 
 1. Make sure Windows is installed correctly.
 1. The next steps require Internet access. Connect to a WiFi network with Internet access. 
@@ -56,7 +58,7 @@ Setting up a new server machine is a little involved. The below again assumes a 
     python -m venv skisale_app
     ```
     This will create the C:\skisale_app directory, and a several subdirectories and files under it. 
-1. Download the skisale_app application as a zip file from the [Github repository](https://github.com/jbhenry/skisale_app/archive/refs/heads/main.zip). 
+1. Download the latest version of the skisale_app application as a zip file from the [Github repository](https://github.com/jbhenry/skisale_app/releases) release page. 
 1. Extract the .zip file into the C:\skisale_app directory. Do not allow it to overwrite the pyvenv.cfg file!
 1. Activate the virtual environment, and install the Python package requirements. Open a command prompt and type:
     ``` 

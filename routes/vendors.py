@@ -196,7 +196,7 @@ def vendor_edit(vendor_id):
             db.session.commit()
 
             flash(f'Vendor "{vendor.full_name}" updated successfully!', 'success')
-            return redirect(url_for('vendors.vendors_list'))
+            return redirect(url_for('vendors.vendor_view', vendor_id=vendor.id))
 
         except Exception as e:
             db.session.rollback()

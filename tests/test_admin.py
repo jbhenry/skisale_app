@@ -4,6 +4,7 @@ Tests for admin routes: database initialization and all close-out reports.
 import io
 import pytest
 from datetime import date
+from unittest.mock import patch, MagicMock
 import openpyxl
 from models import Vendor, Inventory, Invoice, InvoiceLine
 
@@ -537,6 +538,14 @@ class TestDiscountsReport:
 
 
 class TestBackupDb:
+
+    @pytest.fixture(autouse=True)
+    def mock_sqlite(self):
+        """Prevent backup tests from writing real files."""
+        mock_conn = MagicMock()
+        with patch('routes.admin.sqlite3.connect', return_value=mock_conn), \
+             patch('routes.admin.os.makedirs'):
+            yield
 
     def test_post_redirects_to_admin(self, client):
         response = client.post('/admin/backup-db')

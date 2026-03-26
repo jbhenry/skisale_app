@@ -65,7 +65,8 @@ See [user-guide.md](user-guide.md) for CSV format requirements.
 
 > ⚠️ **This is destructive.** Back up the database before proceeding.
 
-- **Admin → Backup Database** — download a copy of the current database
+- **Admin → Backup Database (Server)** — save a timestamped copy to the server's `backups/` folder
+- **Admin → Download Database** — download a copy directly to your browser for off-site storage
 - **Admin → Initialize for New Event** — clears all invoices, sales, and inventory;
   sets all vendors to inactive
 

@@ -47,7 +47,7 @@ Key constants are defined in `constants.py`:
 | `VENDOR_PAYMENT_METHODS` | Check, Cash, … | Vendor payout method options |
 | `PAYMENT_METHODS` | Credit Card, Cash, … | Customer payment method options |
 
-`SURCHARGE_RATE` (3%) is defined in `models.py` and applied automatically for Credit Card and Venmo payments.
+`SURCHARGE_RATE` (3%) and `SURCHARGE_METHODS` are also defined in `constants.py` and applied automatically for Credit Card and Venmo payments.
 
 These are code-level constants, not environment variables. Edit the relevant file and restart the server to change them.
 

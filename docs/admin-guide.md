@@ -10,15 +10,18 @@ Navigate to **Admin** in the top navigation bar.
 
 ## Backup Database
 
-Downloads a copy of the production database (`skisale.db`) to your browser as a timestamped
-file (e.g. `skisale_backup_20260315_120000.db`).
+Two backup options are available from the **Daily Tasks** section of the Admin panel:
+
+**Backup Database (Server)** — saves a timestamped copy to the `backups/` directory on the
+server (e.g. `skisale_backup_20260315_120000.db`). Use this for routine on-site backups.
+
+**Download Database** — sends a copy of the database directly to your browser as a file
+download. Use this to take an off-site copy or transfer to another machine.
 
 **When to back up:**
 - Before initializing for a new event
 - Before any bulk import or data correction
 - At the end of each event day as a precaution
-
-Backups are also saved automatically to the `backups/` directory on the server.
 
 ---
 

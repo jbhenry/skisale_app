@@ -16,7 +16,7 @@ from reportlab.lib.pagesizes import letter as rl_letter
 from reportlab.lib.units import inch
 from reportlab.lib import colors as rl_colors
 
-from flask import Blueprint, render_template, redirect, url_for, flash, Response
+from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
 from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START
@@ -281,6 +281,18 @@ def admin_payout_report():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
+
+
+@admin_bp.route('/admin/mark-donated', methods=['POST'])
+def admin_mark_donated():
+    """Mark all In-Stock items flagged 'Donate if not sold' as Donated."""
+    items = Inventory.query.filter_by(status='In-Stock', donate_if_not_sold=True).all()
+    count = len(items)
+    for item in items:
+        item.status = 'Donated'
+    db.session.commit()
+    flash(f'{count} item{"s" if count != 1 else ""} marked as Donated.', 'success')
+    return redirect(url_for('admin.admin'))
 
 
 @admin_bp.route('/admin/report-instock')
@@ -586,8 +598,8 @@ def admin_report_sales_by_register():
 
 @admin_bp.route('/admin/backup-db', methods=['POST'])
 def admin_backup_db():
-    """Create a timestamped backup of the SQLite database using the online backup API."""
-    db_path = db.engine.url.database  # absolute path resolved by SQLAlchemy
+    """Create a timestamped backup of the SQLite database on the server."""
+    db_path = os.path.abspath(db.engine.url.database)
     backup_dir = os.path.join(os.path.dirname(db_path), 'backups')
     os.makedirs(backup_dir, exist_ok=True)
 
@@ -605,6 +617,46 @@ def admin_backup_db():
         flash(f'Backup failed: {e}', 'danger')
 
     return redirect(url_for('admin.admin'))
+
+
+@admin_bp.route('/admin/download-db')
+def admin_download_db():
+    """Stream a consistent snapshot of the database to the user's browser."""
+    import tempfile
+    db_path = os.path.abspath(db.engine.url.database)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix='.db', delete=False) as tmp:
+            tmp_path = tmp.name
+
+        src = sqlite3.connect(db_path)
+        dst = sqlite3.connect(tmp_path)
+        src.backup(dst)
+        dst.close()
+        src.close()
+
+        buf = io.BytesIO()
+        with open(tmp_path, 'rb') as f:
+            buf.write(f.read())
+        buf.seek(0)
+    except Exception as e:
+        flash(f'Download failed: {e}', 'danger')
+        return redirect(url_for('admin.admin'))
+    finally:
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+
+    return send_file(
+        buf,
+        as_attachment=True,
+        download_name=f'skisale_backup_{timestamp}.db',
+        mimetype='application/x-sqlite3',
+    )
 
 
 @admin_bp.route('/admin/print-checks')
