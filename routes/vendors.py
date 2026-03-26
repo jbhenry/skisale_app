@@ -8,7 +8,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
-from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN, COMMISSION_RATES, VENDOR_PAYMENT_METHODS
+from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN, COMMISSION_RATES, VENDOR_PAYMENT_METHODS, DEFAULT_VENDOR_COMMISSION_RATE, SKU_MIN, SKU_MAX
 
 vendors_bp = Blueprint('vendors', __name__)
 
@@ -148,7 +148,7 @@ def vendor_new():
                 city=request.form.get('city', '').strip(),
                 state=request.form.get('state', '').strip(),
                 zip_code=request.form.get('zip_code', '').strip(),
-                commission_rate=float(request.form.get('commission_rate', 20)) / 100,
+                commission_rate=float(request.form.get('commission_rate', DEFAULT_VENDOR_COMMISSION_RATE * 100)) / 100,
                 payment_method=request.form.get('payment_method', '').strip(),
                 notes=request.form.get('notes', '').strip(),
                 active=request.form.get('active') == 'on',
@@ -187,7 +187,7 @@ def vendor_edit(vendor_id):
             vendor.city = request.form.get('city', '').strip()
             vendor.state = request.form.get('state', '').strip()
             vendor.zip_code = request.form.get('zip_code', '').strip()
-            vendor.commission_rate = float(request.form.get('commission_rate', 20)) / 100
+            vendor.commission_rate = float(request.form.get('commission_rate', DEFAULT_VENDOR_COMMISSION_RATE * 100)) / 100
             vendor.payment_method = request.form.get('payment_method', '').strip()
             vendor.notes = request.form.get('notes', '').strip()
             vendor.active = request.form.get('active') == 'on'
@@ -341,10 +341,10 @@ def vendor_import_csv(vendor_id):
 
         try:
             sku = int(sku)
-            if not (1 <= sku <= 9999999):
+            if not (SKU_MIN <= sku <= SKU_MAX):
                 raise ValueError
         except ValueError:
-            skipped.append({'row': line_num, 'sku': str(sku), 'reason': 'SKU must be a number 1–9999999'})
+            skipped.append({'row': line_num, 'sku': str(sku), 'reason': f'SKU must be a number {SKU_MIN}–{SKU_MAX}'})
             continue
 
         if not price_raw:

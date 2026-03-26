@@ -23,6 +23,12 @@ from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START
 
 admin_bp = Blueprint('admin', __name__)
 
+# XLSX report styling constants
+_REPORT_HEADER_FILL   = '1E3C72'  # dark blue — matches navbar brand color
+_REPORT_HEADER_COLOR  = 'FFFFFF'  # white text
+_REPORT_TITLE_SIZE    = 16
+_REPORT_SUBTOTAL_FILL = 'D9E1F2'  # light blue — subtotal rows
+
 
 def _xlsx_response(wb, filename):
     """Serialize a workbook to an xlsx download response."""
@@ -48,8 +54,8 @@ def _inventory_xlsx(title, status_filter, sheet_name):
     ws = wb.active
     ws.title = sheet_name
 
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill('solid', fgColor='1E3C72')
+    header_font = Font(bold=True, color=_REPORT_HEADER_COLOR)
+    header_fill = PatternFill('solid', fgColor=_REPORT_HEADER_FILL)
     center      = Alignment(horizontal='center')
     money_fmt   = '"$"#,##0.00'
     thin        = Side(style='thin')
@@ -58,7 +64,7 @@ def _inventory_xlsx(title, status_filter, sheet_name):
     num_cols = 6
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     title_cell = ws.cell(1, 1, value=title)
-    title_cell.font = Font(bold=True, size=16)
+    title_cell.font = Font(bold=True, size=_REPORT_TITLE_SIZE)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)
@@ -182,8 +188,8 @@ def admin_payout_report():
     ws.title = 'Payout Report'
 
     # Styles
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill('solid', fgColor='1E3C72')
+    header_font = Font(bold=True, color=_REPORT_HEADER_COLOR)
+    header_fill = PatternFill('solid', fgColor=_REPORT_HEADER_FILL)
     center = Alignment(horizontal='center')
     right  = Alignment(horizontal='right')
     money_fmt = '"$"#,##0.00'
@@ -194,7 +200,7 @@ def admin_payout_report():
     num_cols = 12
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     title_cell = ws.cell(1, 1, value='Payout Report')
-    title_cell.font = Font(bold=True, size=16)
+    title_cell.font = Font(bold=True, size=_REPORT_TITLE_SIZE)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)
@@ -323,8 +329,8 @@ def admin_report_salestax():
     ws = wb.active
     ws.title = 'Sales Tax'
 
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill('solid', fgColor='1E3C72')
+    header_font = Font(bold=True, color=_REPORT_HEADER_COLOR)
+    header_fill = PatternFill('solid', fgColor=_REPORT_HEADER_FILL)
     center    = Alignment(horizontal='center')
     money_fmt = '"$"#,##0.00'
     thin      = Side(style='thin')
@@ -333,7 +339,7 @@ def admin_report_salestax():
     num_cols = 8
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     title_cell = ws.cell(1, 1, value='Sales Tax Report')
-    title_cell.font      = Font(bold=True, size=16)
+    title_cell.font      = Font(bold=True, size=_REPORT_TITLE_SIZE)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)
@@ -401,8 +407,8 @@ def admin_report_discounts():
     ws = wb.active
     ws.title = 'Employee Discounts'
 
-    header_font = Font(bold=True, color='FFFFFF')
-    header_fill = PatternFill('solid', fgColor='1E3C72')
+    header_font = Font(bold=True, color=_REPORT_HEADER_COLOR)
+    header_fill = PatternFill('solid', fgColor=_REPORT_HEADER_FILL)
     center    = Alignment(horizontal='center')
     money_fmt = '"$"#,##0.00'
     thin      = Side(style='thin')
@@ -410,7 +416,7 @@ def admin_report_discounts():
     # Title row
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=11)
     title_cell = ws.cell(1, 1, value='Employee Discounts Report')
-    title_cell.font      = Font(bold=True, size=16)
+    title_cell.font      = Font(bold=True, size=_REPORT_TITLE_SIZE)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)
@@ -484,10 +490,10 @@ def admin_report_sales_by_register():
     ws = wb.active
     ws.title = 'Sales by Register'
 
-    header_font   = Font(bold=True, color='FFFFFF')
-    header_fill   = PatternFill('solid', fgColor='1E3C72')
+    header_font   = Font(bold=True, color=_REPORT_HEADER_COLOR)
+    header_fill   = PatternFill('solid', fgColor=_REPORT_HEADER_FILL)
     subtotal_font = Font(bold=True)
-    subtotal_fill = PatternFill('solid', fgColor='D9E1F2')
+    subtotal_fill = PatternFill('solid', fgColor=_REPORT_SUBTOTAL_FILL)
     center    = Alignment(horizontal='center')
     money_fmt = '"$"#,##0.00'
     thin      = Side(style='thin')
@@ -496,7 +502,7 @@ def admin_report_sales_by_register():
     # Title row
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     title_cell = ws.cell(1, 1, value='Sales by Register')
-    title_cell.font      = Font(bold=True, size=16)
+    title_cell.font      = Font(bold=True, size=_REPORT_TITLE_SIZE)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)

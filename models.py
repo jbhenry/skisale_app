@@ -4,14 +4,13 @@ SkiSale Database Models
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 
+from constants import SURCHARGE_RATE, SURCHARGE_METHODS, DEFAULT_VENDOR_COMMISSION_RATE
+
 
 def utcnow():
     return datetime.now(timezone.utc)
 
 db = SQLAlchemy()
-
-SURCHARGE_RATE = 0.03  # 3% surcharge
-SURCHARGE_METHODS = {'Credit Card', 'Venmo'}
 
 class Vendor(db.Model):
     __tablename__ = 'vendors'
@@ -28,7 +27,7 @@ class Vendor(db.Model):
     zip_code = db.Column(db.String(10))
     
     # Consignment-specific fields
-    commission_rate = db.Column(db.Float, default=0.20)  # Default 20% commission
+    commission_rate = db.Column(db.Float, default=DEFAULT_VENDOR_COMMISSION_RATE)
     payment_method = db.Column(db.String(20))  # Cash, Check, PayPal, etc.
     
     notes = db.Column(db.Text)

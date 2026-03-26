@@ -48,8 +48,15 @@ VENDOR_PAYMENT_METHODS = [
 # Default sales tax rate (can be changed per invoice)
 DEFAULT_TAX_RATE = 0.06  # 6%
 
+# Surcharge applied for certain payment methods
+SURCHARGE_RATE = 0.03  # 3%
+SURCHARGE_METHODS = {'Credit Card', 'Venmo'}
+
 # Employee discount rate applied when an employee discount is selected
 EMPLOYEE_DISCOUNT_RATE = 0.10  # 10%
+
+# Default commission rate for new vendors (must match the form default in COMMISSION_RATES)
+DEFAULT_VENDOR_COMMISSION_RATE = 0.23  # 23% — General Public
 
 # Available vendor commission rates: (integer_pct, display_label)
 # The first entry is the default for new vendors.
@@ -58,6 +65,10 @@ COMMISSION_RATES = [
     (23,  '23% — General Public'),
     (100, '100% — MBSP Only'),
 ]
+
+# Valid SKU range for inventory items
+SKU_MIN = 1
+SKU_MAX = 9_999_999
 
 # Organization info printed on checks — update before printing
 ORG_NAME  = 'Mt. Brighton Ski Patrol Ski Swap'

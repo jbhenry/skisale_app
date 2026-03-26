@@ -2,6 +2,7 @@
 Unit tests for database models.
 """
 from models import Vendor, Inventory, Invoice, InvoiceLine
+from constants import DEFAULT_VENDOR_COMMISSION_RATE
 
 
 class TestVendorModel:
@@ -13,7 +14,7 @@ class TestVendorModel:
         vendor = Vendor(first_name='A', last_name='B')
         db.session.add(vendor)
         db.session.commit()
-        assert vendor.commission_rate == 0.20
+        assert vendor.commission_rate == DEFAULT_VENDOR_COMMISSION_RATE
 
     def test_default_active(self, db):
         vendor = Vendor(first_name='A', last_name='B')
