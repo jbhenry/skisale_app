@@ -74,6 +74,14 @@ with app.app_context():
     except Exception:
         db.session.rollback()  # Column already exists — nothing to do
 
+    try:
+        db.session.execute(text(
+            'ALTER TABLE invoices ADD COLUMN amount_tendered FLOAT'
+        ))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
     # Add surcharge/discount columns if upgrading from an older schema
     for col_sql in [
         'ALTER TABLE invoices ADD COLUMN surcharge_rate FLOAT NOT NULL DEFAULT 0.0',

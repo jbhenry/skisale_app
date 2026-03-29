@@ -184,6 +184,9 @@ def invoice_edit(invoice_id):
                 invoice.notes = request.form.get('notes', '').strip()
                 invoice.calculate_totals()
 
+                tendered = request.form.get('amount_tendered', '').strip()
+                invoice.amount_tendered = float(tendered) if tendered else None
+
                 # Mark all items in this invoice as Sold
                 for line in invoice.lines:
                     line.inventory_item.status = 'Sold'

@@ -123,7 +123,7 @@
 
                             <div class="mb-3">
                                 <label for="payment_method" class="form-label">Payment Method</label>
-                                <select class="form-select" name="payment_method">
+                                <select class="form-select" id="payment_method" name="payment_method">
                                     <option value="">--Select--</option>
                                     {% for method in payment_methods %}
                                     <option value="{{ method }}" 
@@ -187,6 +187,19 @@
                             <input type="hidden" name="payment_method" value="{{ invoice.payment_method or '' }}">
                             <input type="hidden" name="notes" value="{{ invoice.notes or '' }}">
 
+                            <div id="cash_tendered_section" class="mb-3" style="display:none;">
+                                <label class="form-label fw-semibold">Amount Tendered</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control form-control-lg"
+                                           id="amount_tendered" name="amount_tendered"
+                                           step="0.01" min="0" placeholder="0.00">
+                                </div>
+                                <div id="change_due_display" class="mt-2 fs-5 fw-bold text-success" style="display:none;">
+                                    Change Due: $<span id="change_due_amount">0.00</span>
+                                </div>
+                            </div>
+
                             <button type="submit" class="btn btn-success btn-lg w-100"
                                     {% if invoice.lines|length == 0 %}disabled{% endif %}>
                                 <i class="bi bi-check-circle"></i> Complete Sale
@@ -228,6 +241,45 @@
 
     discountSelect.addEventListener('change', updateNameRequired);
     updateNameRequired();
+
+    // Amount Tendered / Change Due — only shown for Cash payments
+    const paymentSelect     = document.getElementById('payment_method');
+    const tenderedSection   = document.getElementById('cash_tendered_section');
+    const tenderedInput     = document.getElementById('amount_tendered');
+    const changeDueDisplay  = document.getElementById('change_due_display');
+    const changeDueAmount   = document.getElementById('change_due_amount');
+    const invoiceTotal      = {{ invoice.total }};
+
+    function updateTenderedVisibility() {
+        const isCash = paymentSelect.value === 'Cash';
+        tenderedSection.style.display = isCash ? '' : 'none';
+        if (!isCash) {
+            tenderedInput.value = '';
+            changeDueDisplay.style.display = 'none';
+        }
+    }
+
+    function updateChangeDue() {
+        const tendered = parseFloat(tenderedInput.value);
+        if (!isNaN(tendered) && tendered >= 0) {
+            const change = Math.max(0, tendered - invoiceTotal);
+            changeDueAmount.textContent = change.toFixed(2);
+            changeDueDisplay.style.display = '';
+            changeDueDisplay.className = change >= 0
+                ? 'mt-2 fs-5 fw-bold text-success'
+                : 'mt-2 fs-5 fw-bold text-danger';
+        } else {
+            changeDueDisplay.style.display = 'none';
+        }
+    }
+
+    const completePaymentField = document.querySelector('input[name="payment_method"][type="hidden"]');
+    paymentSelect.addEventListener('change', function () {
+        completePaymentField.value = paymentSelect.value;
+        updateTenderedVisibility();
+    });
+    tenderedInput.addEventListener('input', updateChangeDue);
+    updateTenderedVisibility();
 
     // Keep the hidden customer_name in the Complete Sale form in sync with
     // the visible input, so typing a name then clicking Complete (without

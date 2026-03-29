@@ -125,6 +125,10 @@
                         <p class="mb-2"><strong>{{ invoice.payment_method }} Surcharge ({{ (invoice.surcharge_rate * 100)|round(0)|int }}%):</strong></p>
                         {% endif %}
                         <p class="mb-0"><h4><strong>Total:</strong></h4></p>
+                        {% if invoice.amount_tendered is not none %}
+                        <p class="mb-2 mt-2"><strong>Amount Tendered:</strong></p>
+                        <p class="mb-0"><strong>Change Due:</strong></p>
+                        {% endif %}
                     </div>
                     <div class="col-md-4 text-end">
                         <p class="mb-2">${{ "%.2f"|format(invoice.subtotal) }}</p>
@@ -136,6 +140,10 @@
                         <p class="mb-2">${{ "%.2f"|format(invoice.surcharge_amount) }}</p>
                         {% endif %}
                         <p class="mb-0"><h4 class="text-success">${{ "%.2f"|format(invoice.total) }}</h4></p>
+                        {% if invoice.amount_tendered is not none %}
+                        <p class="mb-2 mt-2">${{ "%.2f"|format(invoice.amount_tendered) }}</p>
+                        <p class="mb-0"><strong class="text-success fs-5">${{ "%.2f"|format(invoice.change_due) }}</strong></p>
+                        {% endif %}
                     </div>
                 </div>
             </div>

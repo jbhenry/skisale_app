@@ -127,6 +127,7 @@ class Invoice(db.Model):
     total = db.Column(db.Float, nullable=False, default=0.0)
     payment_method = db.Column(db.String(20))  # Cash, Credit, Check, etc.
     register_id = db.Column(db.String(50))
+    amount_tendered = db.Column(db.Float)
     notes = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=utcnow)
     updated_at = db.Column(db.DateTime, default=utcnow, onupdate=utcnow)
@@ -150,7 +151,14 @@ class Invoice(db.Model):
             self.surcharge_rate = 0.0
             self.surcharge_amount = 0.0
         self.total = discounted + self.tax_amount + self.surcharge_amount
-    
+
+    @property
+    def change_due(self):
+        """Change due to customer (only meaningful for cash payments)."""
+        if self.amount_tendered is not None and self.total:
+            return max(0.0, round(self.amount_tendered - self.total, 2))
+        return None
+
     def to_dict(self):
         """Convert to dictionary for JSON responses"""
         return {
