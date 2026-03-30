@@ -131,7 +131,7 @@ def inventory_edit(item_id):
             db.session.commit()
 
             flash(f'Inventory item SKU {item.sku} updated successfully!', 'success')
-            return redirect(url_for('inventory.inventory_list'))
+            return redirect(url_for('inventory.inventory_view', item_id=item.id))
 
         except Exception as e:
             db.session.rollback()

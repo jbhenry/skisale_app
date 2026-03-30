@@ -20,44 +20,12 @@
             <div class="card-body">
                 <p class="text-muted">Pre-sale configuration and setup tasks.</p>
                 <div class="list-group list-group-flush">
-                    <button type="button"
-                            class="list-group-item list-group-item-action d-flex align-items-center gap-3"
-                            data-bs-toggle="modal" data-bs-target="#initDbModal">
-                        <i class="bi bi-arrow-counterclockwise fs-4 text-danger"></i>
+                    <div class="list-group-item d-flex align-items-center gap-3">
+                        <i class="bi bi-terminal fs-4 text-muted"></i>
                         <div class="text-start">
                             <strong>Initialize for New Swap</strong>
-                            <div class="text-muted small">Clears all invoices, sales, and inventory. Sets all vendors to inactive. Use at the start of each new sale event.</div>
+                            <div class="text-muted small">Run <code>python init_swap.py</code> on the server. Clears all invoices, sales, and inventory; sets all vendors to inactive.</div>
                         </div>
-                        <i class="bi bi-exclamation-triangle ms-auto text-danger"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Initialize DB Confirmation Modal -->
-        <div class="modal fade" id="initDbModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill"></i> Confirm Database Initialization</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>This will permanently delete:</p>
-                        <ul>
-                            <li>All <strong>invoices</strong> and <strong>sales records</strong></li>
-                            <li>All <strong>inventory items</strong></li>
-                        </ul>
-                        <p>And will set all <strong>vendors to inactive</strong>.</p>
-                        <p class="mb-0"><strong>This cannot be undone.</strong> Make sure you have downloaded the Payout Report and printed checks before proceeding.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <form method="POST" action="{{ url_for('admin.admin_initialize_db') }}" class="d-inline">
-                            <button type="submit" class="btn btn-danger">
-                                <i class="bi bi-arrow-counterclockwise"></i> Yes, Initialize Database
-                            </button>
-                        </form>
                     </div>
                 </div>
             </div>

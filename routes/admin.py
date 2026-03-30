@@ -146,21 +146,6 @@ def admin():
     return render_template('admin.html')
 
 
-@admin_bp.route('/admin/initialize-db', methods=['POST'])
-def admin_initialize_db():
-    """Truncate sales data and deactivate all vendors to reset for a new swap."""
-    try:
-        InvoiceLine.query.delete()
-        Invoice.query.delete()
-        Inventory.query.delete()
-        Vendor.query.update({'active': False})
-        db.session.commit()
-        flash('Database initialized: all sales data cleared and vendors set to inactive.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error initializing database: {str(e)}', 'error')
-    return redirect(url_for('admin.admin'))
-
 
 @admin_bp.route('/admin/payout-report')
 def admin_payout_report():

@@ -7,8 +7,9 @@ Usage:
     source bin/activate && python db_check.py
 """
 import sys
-from app import app, INVENTORY_STATUSES
+from app import app
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
+from constants import INVENTORY_STATUSES
 from sqlalchemy import func
 
 TOLERANCE = 0.02  # cents tolerance for float rounding comparisons
@@ -107,13 +108,17 @@ with app.app_context():
     math_errors = []
     for inv in invoices:
         line_sum = sum(l.price for l in inv.lines)
-        expected_tax = line_sum * inv.tax_rate
-        expected_surcharge = line_sum * inv.surcharge_rate
-        expected_total = line_sum + expected_tax + expected_surcharge
+        expected_discount = round(line_sum * inv.discount_rate, 2)
+        discounted = line_sum - expected_discount
+        expected_tax = discounted * inv.tax_rate
+        expected_surcharge = discounted * inv.surcharge_rate
+        expected_total = discounted + expected_tax + expected_surcharge
 
         errs = []
         if abs(inv.subtotal - line_sum) > TOLERANCE:
             errs.append(f"subtotal {inv.subtotal:.4f} != line sum {line_sum:.4f}")
+        if abs(inv.discount_amount - expected_discount) > TOLERANCE:
+            errs.append(f"discount_amount {inv.discount_amount:.4f} != {expected_discount:.4f}")
         if abs(inv.tax_amount - expected_tax) > TOLERANCE:
             errs.append(f"tax_amount {inv.tax_amount:.4f} != {expected_tax:.4f}")
         if abs(inv.total - expected_total) > TOLERANCE:

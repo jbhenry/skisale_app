@@ -52,49 +52,6 @@ def populated_db(db):
     return db
 
 
-class TestAdminInitializeDb:
-
-    def test_clears_all_invoice_lines(self, client, populated_db):
-        assert InvoiceLine.query.count() == 2
-        client.post('/admin/initialize-db', follow_redirects=True)
-        assert InvoiceLine.query.count() == 0
-
-    def test_clears_all_invoices(self, client, populated_db):
-        assert Invoice.query.count() == 1
-        client.post('/admin/initialize-db', follow_redirects=True)
-        assert Invoice.query.count() == 0
-
-    def test_clears_all_inventory(self, client, populated_db):
-        assert Inventory.query.count() == 2
-        client.post('/admin/initialize-db', follow_redirects=True)
-        assert Inventory.query.count() == 0
-
-    def test_vendors_are_not_deleted(self, client, populated_db):
-        assert Vendor.query.count() == 2
-        client.post('/admin/initialize-db', follow_redirects=True)
-        assert Vendor.query.count() == 2
-
-    def test_all_vendors_set_inactive(self, client, populated_db):
-        assert Vendor.query.filter_by(active=True).count() == 2
-        client.post('/admin/initialize-db', follow_redirects=True)
-        assert Vendor.query.filter_by(active=True).count() == 0
-        assert Vendor.query.filter_by(active=False).count() == 2
-
-    def test_redirects_to_admin_page(self, client, populated_db):
-        response = client.post('/admin/initialize-db')
-        assert response.status_code == 302
-        assert '/admin' in response.headers['Location']
-
-    def test_get_method_not_allowed(self, client):
-        response = client.get('/admin/initialize-db')
-        assert response.status_code == 405
-
-    def test_succeeds_on_empty_database(self, client, db):
-        """Route should not error when tables are already empty."""
-        assert Inventory.query.count() == 0
-        response = client.post('/admin/initialize-db', follow_redirects=True)
-        assert response.status_code == 200
-
 
 # ---------------------------------------------------------------------------
 # Shared fixture for report tests

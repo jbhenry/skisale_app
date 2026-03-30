@@ -137,7 +137,7 @@
                     <!-- Buttons -->
                     <div class="d-flex justify-content-between">
                         <div>
-                            <a href="{{ url_for('inventory.inventory_list') }}" class="btn btn-secondary">
+                            <a href="{{ url_for('inventory.inventory_view', item_id=item.id) if item else url_for('inventory.inventory_list') }}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> Cancel
                             </a>
                             {% if preselect_vendor_id %}
