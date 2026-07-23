@@ -8,11 +8,12 @@ Notes specific to our environment are called out where applicable.
 
 | File | Audience | Description |
 |------|----------|-------------|
+| [workflow.md](workflow.md) | Volunteers / cashiers | General workflow of how the swap operates |
+| [user-guide.md](user-guide.md) | Volunteers / cashiers | Using the app at the sale |
+| [operations.md](operations.md) | Event administrators | Day-of-sale workflow |
+| [admin-guide.md](admin-guide.md) | Administrators | Admin panel, reports, backups, reset |
 | [setup.md](setup.md) | Developers / IT | Installation, configuration, first run |
 | [hardwaresetup.md](hardwaresetup.md) | Developers / IT | Installation of PC's, etc. **Mt. B-specific** |
-| [operations.md](operations.md) | Event administrators | Day-of-sale workflow |
-| [user-guide.md](user-guide.md) | Volunteers / cashiers | Using the app at the sale |
-| [admin-guide.md](admin-guide.md) | Administrators | Admin panel, reports, backups, reset |
 | [data-model.md](data-model.md) | Developers | Business rules, data model, calculations |
 
 ## Quick Links
