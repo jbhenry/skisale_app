@@ -9,7 +9,9 @@ Notes specific to our environment are called out where applicable.
 | File | Audience | Description |
 |------|----------|-------------|
 | [workflow.md](workflow.md) | Volunteers / cashiers | General workflow of how the swap operates |
-| [user-guide.md](user-guide.md) | Volunteers / cashiers | Using the app at the sale |
+| [user-guide-checkin.md](user-guide-checkin.md) | Volunteers / cashiers | Using the app for Vendor and Equipment check in at the sale |
+| [user-guide-sales.md](user-guide-sales.md) | Volunteers / cashiers | Using the app for Equipment sales |
+| [user-guide-checkout.md](user-guide-checkout.md) | Volunteers / cashiers | Using the app for Vendor check out and Equipment pickup |
 | [operations.md](operations.md) | Event administrators | Day-of-sale workflow |
 | [admin-guide.md](admin-guide.md) | Administrators | Admin panel, reports, backups, reset |
 | [setup.md](setup.md) | Developers / IT | Installation, configuration, first run |
