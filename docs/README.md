@@ -8,8 +8,8 @@ Notes specific to our environment are called out where applicable.
 
 | File | Audience | Description |
 |------|----------|-------------|
-| [workflow.md](workflow.md) | Volunteers / cashiers | General workflow of how the swap operates |
-| [user-guide-checkin.md](user-guide-checkin.md) | Volunteers / cashiers | Using the app for Vendor and Equipment check in at the sale |
+| [workflow.md](workflow.md) | All | General workflow of how the swap operates |
+| [user-guide-check-in.md](user-guide-checkin.md) | Volunteers / cashiers | Using the app for Vendor and Equipment check in at the sale |
 | [user-guide-sales.md](user-guide-sales.md) | Volunteers / cashiers | Using the app for Equipment sales |
 | [user-guide-checkout.md](user-guide-checkout.md) | Volunteers / cashiers | Using the app for Vendor check out and Equipment pickup |
 | [operations.md](operations.md) | Event administrators | Day-of-sale workflow |
@@ -20,7 +20,7 @@ Notes specific to our environment are called out where applicable.
 
 ## Quick Links
 
-- **Start the app:** `source bin/activate && python app.py` → http://localhost:5000
+- **Start the app (development server):** `source bin/activate && python app.py` → http://localhost:5000
 - **Production server:** `source bin/activate && python serve.py`
 - **Run tests:** `source bin/activate && python -m pytest tests/ -v`
 - **Re-initialize DB:** `python init_db.py` *(destructive — wipes all data)*

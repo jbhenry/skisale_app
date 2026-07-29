@@ -12,7 +12,7 @@ We currently use the following hardware to run the swap:
     * Two Pantum laser printers - for check-in and pickup receipts for vendors. Also used for printing final reports and vendor checks at the end of the swap. Network printers connected via WiFi to the router.
     * Two Rongta receipt printers - print sales receipts for customer purchases. Network printers connected via Ethernet to the router.
 * Bar-code scanners. We have a selection of scanners, some of which connect via USB cable, others are wireless with a USB dongle.
-* Router. The swap runs on an isolated LAN managed with our own router. This network DOES NOT have Internet access. Currently using a Linksys WRT54G "blue-box" router. Router SSID and password are labeld on the device. All devices connect to the network via WiFi, with the exception of the two receipt printers, which use Ethernet. 
+* Router. The swap runs on an isolated LAN managed with our own router. This network **DOES NOT** have Internet access. Currently using a Linksys WRT54G "blue-box" router. Router SSID and password are labeled on the device. All devices connect to the network via WiFi, with the exception of the two receipt printers, which use Ethernet. 
 * Square credit card readers. We have two bluetooth-connected card readers. Access to the WiFi in the lodge has at times been... challenging.
     * If we can get access to the lodge WiFi, we can use the patrol's two iPads to run the Square register app to process credit cards.
     * If we cannot get access to the lodge WiFi, we have in the past used individual's cell phones either as a hotspot for the tablets, or used the phone directly with the Square app and readers.
@@ -37,7 +37,7 @@ Assuming a Windows machine:
     * Set the closest Rongta as the default printer. 
 1. Create a shortcut on the desktop to the server URL **http://\<hostname\>:5000**, where \<hostname\> is the IP address of the server machine. 
 
-We've only had Windows laptops so far, but a Linux, Mac, or Chromebook machine should work just as well for a workstation. The only requirements are a web browser, access to our LAN, and drivers for our printers. Setup would be very similar to above. An iPad or other tablet might also work as a workstation, with the caviat that printing might not work as designed due to lack of drivers for our printers. This has not been tested. 
+We've only had Windows laptops so far, but a Linux, Mac, or Chromebook machine should work just as well for a workstation. The only requirements are a web browser, access to our LAN, and drivers for our printers. Setup would be very similar to above. An iPad or other tablet might also work as a workstation, with the caveat that printing might not work as designed due to lack of drivers for our printers. This has not been tested. 
 
 ## Setup a new server
 
