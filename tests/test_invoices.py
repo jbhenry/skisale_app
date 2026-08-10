@@ -487,6 +487,28 @@ class TestInvoiceReturnItem:
         })
         assert f'/invoices/{sample_invoice.id}' in response.location
 
+    def test_view_after_returning_all_items_on_cash_invoice_with_tendered(
+        self, client, db, sample_item, sample_invoice
+    ):
+        """Regression: cash invoice with amount_tendered set, all items
+        returned -> total becomes 0, change_due must not crash the view."""
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=sample_item.price,
+        )
+        db.session.add(line)
+        sample_item.status = 'Sold'
+        sample_invoice.payment_method = 'Cash'
+        sample_invoice.amount_tendered = 50.0
+        sample_invoice.calculate_totals()
+        db.session.commit()
+
+        client.post(f'/invoices/{sample_invoice.id}/return_item', data={'line_id': line.id})
+
+        response = client.get(f'/invoices/{sample_invoice.id}')
+        assert response.status_code == 200
+
 
 class TestInvoiceSurcharge:
     def test_credit_card_adds_surcharge(self, client, db, sample_item):

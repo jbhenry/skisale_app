@@ -155,7 +155,7 @@ class Invoice(db.Model):
     @property
     def change_due(self):
         """Change due to customer (only meaningful for cash payments)."""
-        if self.amount_tendered is not None and self.total:
+        if self.amount_tendered is not None:
             return max(0.0, round(self.amount_tendered - self.total, 2))
         return None
 
