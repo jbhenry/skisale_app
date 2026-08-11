@@ -38,12 +38,14 @@ PAYMENT_METHODS = [
     'Venmo',
 ]
 
+# For now, we only pay via check...
 VENDOR_PAYMENT_METHODS = [
-    'Cash',
     'Check',
-    'PayPal',
-    'Venmo',
 ]
+# ... but we may add these later.
+    # 'Cash',
+    # 'PayPal',
+    # 'Venmo',
 
 # Default sales tax rate (can be changed per invoice)
 DEFAULT_TAX_RATE = 0.06  # 6%
@@ -61,10 +63,14 @@ DEFAULT_VENDOR_COMMISSION_RATE = 0.23  # 23% — General Public
 # Available vendor commission rates: (integer_pct, display_label)
 # The first entry is the default for new vendors.
 COMMISSION_RATES = [
-    (15,  '15% — Employees'),
+    (15,  '15% — Employees/Patrollers'),
     (23,  '23% — General Public'),
-    (100, '100% — MBSP Only'),
 ]
+# Removed this one from COMMISSION_RATES due to it causing confusion. Only one vendor will have this rate,
+# and can be set manually.
+#    (100, '100% — MBSP Only'),
+
+
 
 # Valid SKU range for inventory items
 SKU_MIN = 1
