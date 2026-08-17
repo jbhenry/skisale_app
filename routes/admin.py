@@ -736,36 +736,41 @@ def admin_print_checks():
         bot_y = STUB1_TOP
 
         # Date — top right
+        DATE_DY = 0.5 * inch
         c.setFont('Helvetica', 10)
-        c.drawRightString(R, top_y - 20, date.today().strftime('%-m/%-d/%Y'))
+        c.drawRightString(R, top_y - 20 - DATE_DY, date.today().strftime('%-m/%-d/%Y'))
 
-        # Payee name (left) and amount (right)
+        # Payee name (left) and amount (right) — shifted to align with check stock
+        PAYEE_DX  = 0.75 * inch    # payee name shift right
+        PAYEE_DY  = 0.625 * inch   # payee name / amount shift down
+        AMOUNT_DX = 1.0 * inch     # amount shift left, relative to payee name's right edge
+        payee_x   = L + PAYEE_DX
+        payee_r   = R + PAYEE_DX
+        amount_r  = payee_r - AMOUNT_DX
+        payee_y   = top_y - 46 - PAYEE_DY
         c.setFont('Helvetica-Bold', 12)
-        c.drawString(L, top_y - 46, data['name'])
-        c.drawRightString(R, top_y - 46, f'${data["amount"]:,.2f}')
+        c.drawString(payee_x, payee_y, data['name'])
+        c.drawRightString(amount_r, payee_y, f'${data["amount"]:,.2f}')
 
         # Amount in words with asterisk fill to right margin
+        WORDS_DY = 0.125 * inch
         words  = _amount_to_words(data['amount'])
         c.setFont('Helvetica', 10)
         words_w = c.stringWidth(words + ' ', 'Helvetica', 10)
         star_w  = c.stringWidth('*', 'Helvetica', 10)
-        n_stars = max(0, int(((R - L) - words_w) / star_w))
-        c.drawString(L, top_y - 62, words + ' ' + '*' * n_stars)
+        n_stars = max(0, int(((payee_r - payee_x) - words_w) / star_w))
+        c.drawString(payee_x, payee_y - 16 - WORDS_DY, words + ' ' + '*' * n_stars)
 
         # Address block — indented, positioned for window envelope
-        ax = L + 48
-        ay = top_y - 128
+        ADDR_BLOCK_DY = 0.625 * inch
+        ax = L + 48 - 0.25 * inch
+        ay = top_y - 128 - ADDR_BLOCK_DY
         c.setFont('Helvetica', 11)
         c.drawString(ax, ay, data['name'])
         if data['addr1']:
             c.drawString(ax, ay - 16, data['addr1'])
         if data['addr2']:
             c.drawString(ax, ay - 32, data['addr2'])
-
-        # 501-C3 note — bottom right of check section
-        c.setFont('Helvetica', 8)
-        c.drawRightString(R, bot_y + 38, '(operating under the 501-C3 authority of:')
-        c.drawRightString(R, bot_y + 26, 'National Ski Patrol, Central Division)')
 
         dashed_cut_line(c, bot_y)
 
@@ -844,12 +849,17 @@ def admin_print_checks():
         dashed_cut_line(c, bot_y)
 
     # ── Draw bottom stub ───────────────────────────────────────────────────────
-    def draw_bottom_stub(c, top_y, data):
-        bot_y = top_y - SECTION_H
+    # Address offset calibrated to our actual #10 window envelope: window is
+    # 7/8" from left, 1/2" from bottom, 4-1/2" x 1-1/8". Packet (one folded
+    # third, 8.5" x 3.667") sits centered horizontally and flush against the
+    # bottom of the envelope. See Prompt_Log.md for the derivation.
+    STUB_ADDR_RIGHT = -0.03 * inch
+    STUB_ADDR_DOWN  = 1.708 * inch
 
+    def draw_bottom_stub(c, top_y, data):
         # Address block — indented
-        ax = L + 48
-        ay = top_y - 60
+        ax = L + 48 + STUB_ADDR_RIGHT
+        ay = top_y - 60 - STUB_ADDR_DOWN
         c.setFont('Helvetica', 11)
         c.drawString(ax, ay, data['name'])
         if data['addr1']:
@@ -857,9 +867,9 @@ def admin_print_checks():
         if data['addr2']:
             c.drawString(ax, ay - 32, data['addr2'])
 
-        # Long date at bottom left
+        # Long date — top right, clear of the window (which starts ~2" down from top_y)
         c.setFont('Helvetica', 10)
-        c.drawString(L, bot_y + 18, date.today().strftime('%A, %B %-d, %Y'))
+        c.drawRightString(R, top_y - 24, date.today().strftime('%A, %B %-d, %Y'))
 
     # ── Build PDF ─────────────────────────────────────────────────────────────
     buf = io.BytesIO()
