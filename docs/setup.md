@@ -7,6 +7,8 @@
 
 ## Installation
 
+**Linux / macOS**
+
 ```bash
 # Clone the repository
 git clone https://github.com/jbhenry/skisale_app.git
@@ -20,9 +22,40 @@ source bin/activate
 pip install -r requirements.txt
 ```
 
+**Windows (PowerShell)**
+
+```powershell
+# Clone the repository
+git clone https://github.com/jbhenry/skisale_app.git
+cd skisale_app
+
+# Create and activate a virtual environment
+python -m venv .
+.\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+> If activation fails with a script execution policy error, run PowerShell as
+> Administrator once and execute:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
 ## First Run
 
+**Linux / macOS**
+
 ```bash
+# Initialize the database with sample data (optional)
+python init_db.py
+
+# Start the development server
+python app.py
+```
+
+**Windows (PowerShell)**
+
+```powershell
 # Initialize the database with sample data (optional)
 python init_db.py
 
@@ -62,8 +95,17 @@ These are code-level constants, not environment variables. Edit the relevant fil
 
 Use Waitress instead of the Flask dev server:
 
+**Linux / macOS**
+
 ```bash
 source bin/activate
+python serve.py
+```
+
+**Windows (PowerShell)**
+
+```powershell
+.\Scripts\Activate.ps1
 python serve.py
 ```
 
