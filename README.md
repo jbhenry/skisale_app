@@ -29,6 +29,8 @@ Flask web application for managing consignment ski sales — consignors, invento
 
 ## Setup
 
+**Linux / macOS**
+
 ```bash
 # Create and activate virtualenv (first time only)
 python3 -m venv .
@@ -40,6 +42,24 @@ pip install -r requirements.txt
 # Start the development server
 python app.py
 ```
+
+**Windows (PowerShell)**
+
+```powershell
+# Create and activate virtualenv (first time only)
+python -m venv .
+.\Scripts\Activate.ps1
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the development server
+python app.py
+```
+
+> If activation fails with a script execution policy error, run PowerShell as
+> Administrator once and execute:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
 
 App runs at **http://localhost:5000**. The SQLite database is created automatically at first start.
 
@@ -64,9 +84,18 @@ python -m pytest tests/test_admin.py -v   # single file
 
 Run under Waitress instead of the Flask dev server:
 
+**Linux / macOS**
+
 ```bash
 source bin/activate
 waitress-serve --host=0.0.0.0 --port=5000 app:app
+```
+
+**Windows (PowerShell)**
+
+```powershell
+.\Scripts\Activate.ps1
+python serve.py
 ```
 
 - **Database**: `var/app-instance/skisale.db`
