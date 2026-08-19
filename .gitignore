@@ -11,6 +11,12 @@ lib
 lib/*
 lib64
 lib64/*
+Scripts
+Scripts/*
+Include
+Include/*
+Lib
+Lib/*
 var
 var/*
 var/app-instance/backups/*

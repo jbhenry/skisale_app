@@ -758,7 +758,7 @@ def admin_print_checks():
         c.setFont('Helvetica', 10)
         words_w = c.stringWidth(words + ' ', 'Helvetica', 10)
         star_w  = c.stringWidth('*', 'Helvetica', 10)
-        n_stars = max(0, int(((payee_r - payee_x) - words_w) / star_w))
+        n_stars = max(0, int(((min(payee_r, R) - payee_x) - words_w) / star_w))
         c.drawString(payee_x, payee_y - 16 - WORDS_DY, words + ' ' + '*' * n_stars)
 
         # Address block — indented, positioned for window envelope
