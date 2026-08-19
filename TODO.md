@@ -1,7 +1,7 @@
 # TODO list for skisale_app
 
 ## Code
-- Adjust alignment of vendor checks to match our forms
+- **DONE** Check layout (bottom stub): vendor name/address calibrated to actual #10 window envelope.
 - **DONE** Add register ID or employee ID to each invoice.   
     - Remember (cookie?) after initial entry
 - **DONE** Make Register ID mandatory before making any updates.   
