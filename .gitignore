@@ -23,3 +23,4 @@ var/app-instance/backups/*
 backups/
 pyvenv.cfg
 docs/Ski_Swap_Workflow.pptx
+AllVendors.csv
