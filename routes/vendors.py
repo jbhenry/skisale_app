@@ -362,8 +362,8 @@ def vendor_import_csv(vendor_id):
             skipped.append({'row': line_num, 'sku': sku, 'reason': 'SKU already exists'})
             continue
 
-        # Map equipment type to a known value, default to 'Other'
-        matched_type = 'Other'
+        # Map equipment type to a known value if it matches one, otherwise keep as-is
+        matched_type = equip_type or 'Other'
         if equip_type:
             for known in EQUIPMENT_TYPES:
                 if equip_type.lower() == known.lower():

@@ -278,7 +278,7 @@ class TestVendorImportCsv:
         )
         assert Inventory.query.count() == 0
 
-    def test_import_unknown_equipment_type_defaults_to_other(self, client, db, sample_vendor):
+    def test_import_unknown_equipment_type_kept_as_is(self, client, db, sample_vendor):
         csv_data = b'SKU,Price,Equipment Type\n3004,75.00,Surfboard\n'
         data = {'csv_file': (io.BytesIO(csv_data), 'items.csv')}
         client.post(
@@ -287,6 +287,18 @@ class TestVendorImportCsv:
             content_type='multipart/form-data',
         )
         item = Inventory.query.filter_by(sku=3004).first()
+        assert item is not None
+        assert item.equipment_type == 'Surfboard'
+
+    def test_import_missing_equipment_type_defaults_to_other(self, client, db, sample_vendor):
+        csv_data = b'SKU,Price,Equipment Type\n3006,75.00,\n'
+        data = {'csv_file': (io.BytesIO(csv_data), 'items.csv')}
+        client.post(
+            f'/vendors/{sample_vendor.id}/import',
+            data=data,
+            content_type='multipart/form-data',
+        )
+        item = Inventory.query.filter_by(sku=3006).first()
         assert item is not None
         assert item.equipment_type == 'Other'
 
