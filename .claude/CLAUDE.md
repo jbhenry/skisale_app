@@ -17,13 +17,6 @@ source bin/activate && python -m pytest tests/ -q      # full suite, quiet
 source bin/activate && python -m pytest tests/test_admin.py -v   # one file
 ```
 
-## Key Files
-- `app.py` — all Flask routes (~1300 lines, organized with section comments)
-- `models.py` — SQLAlchemy ORM: Vendor, Inventory, Invoice, InvoiceLine
-- `templates/` — Jinja2 + Bootstrap 5
-- `tests/` — pytest suite (92 tests), all isolated with in-memory SQLite
-- `tests/conftest.py` — shared fixtures: app, client, db, sample_vendor, sample_item, sample_invoice
-
 ## Architecture
 - Flask + SQLAlchemy + SQLite, no Alembic — schema changes done as startup migrations
 - Soft-delete vendors (`active=False`), hard-delete inventory
