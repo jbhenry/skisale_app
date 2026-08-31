@@ -1,12 +1,13 @@
 from waitress import serve
 from app import app
 import logging
+from logging.handlers import RotatingFileHandler
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(levelname)s %(name)s: %(message)s',
     handlers=[
-        logging.FileHandler('logs/skisale_app.log'),
+        RotatingFileHandler('logs/skisale_app.log', maxBytes=1_000_000, backupCount=5),
         logging.StreamHandler()  # keeps console output too
     ]
 )
