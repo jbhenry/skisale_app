@@ -62,15 +62,18 @@
                             <label for="equipment_type" class="form-label">
                                 Equipment Type <span class="text-danger">*</span>
                             </label>
-                            <input type="text" class="form-control" id="equipment_type" name="equipment_type"
-                                   list="equipment_types_list" required autocomplete="off"
-                                   value="{{ item.equipment_type if item else '' }}"
-                                   placeholder="Select or type a type">
-                            <datalist id="equipment_types_list">
+                            <select class="form-select" id="equipment_type" name="equipment_type" required>
+                                <option value="">--Select Type--</option>
+                                {% if item and item.equipment_type and item.equipment_type not in equipment_types %}
+                                <option value="{{ item.equipment_type }}" selected>{{ item.equipment_type }}</option>
+                                {% endif %}
                                 {% for eq_type in equipment_types %}
-                                <option value="{{ eq_type }}">
+                                <option value="{{ eq_type }}"
+                                        {% if item and item.equipment_type == eq_type %}selected{% endif %}>
+                                    {{ eq_type }}
+                                </option>
                                 {% endfor %}
-                            </datalist>
+                            </select>
                         </div>
                         <div class="col-md-6">
                             <label for="status" class="form-label">
