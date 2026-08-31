@@ -76,12 +76,21 @@
             <table class="table table-hover">
                 <thead class="table-light">
                     <tr>
-                        <th>SKU</th>
-                        <th>Vendor</th>
-                        <th>Equipment Type</th>
+                        {% macro sort_link(key, label) %}
+                        <a href="{{ url_for('inventory.inventory_list', search=search, status=status_filter, equipment=equipment_filter, vendor=vendor_filter, donate=donate_filter, sort=key, direction='asc' if sort != key or direction == 'desc' else 'desc') }}"
+                           class="text-decoration-none text-dark">
+                            {{ label }}
+                            {% if sort == key %}
+                                {{ '▲' if direction == 'asc' else '▼' }}
+                            {% endif %}
+                        </a>
+                        {% endmacro %}
+                        <th>{{ sort_link('sku', 'SKU') }}</th>
+                        <th>{{ sort_link('vendor', 'Vendor') }}</th>
+                        <th>{{ sort_link('equipment', 'Equipment Type') }}</th>
                         <th>Description</th>
                         <th>Price</th>
-                        <th>Status</th>
+                        <th>{{ sort_link('status', 'Status') }}</th>
                         <th title="Donate If Not Sold">Donate?</th>
                         <th class="text-end">Actions</th>
                     </tr>

@@ -27,6 +27,8 @@ def inventory_list():
     vendor_filter = request.args.get('vendor', '')
     donate_filter = request.args.get('donate', '')
     search = request.args.get('search', '')
+    sort = request.args.get('sort', 'sku')
+    direction = request.args.get('direction', 'asc')
 
     # Build query
     query = Inventory.query
@@ -54,7 +56,21 @@ def inventory_list():
             )
         )
 
-    inventory_items = query.order_by(Inventory.sku).all()
+    if sort == 'vendor':
+        query = query.join(Vendor, Inventory.vendor_id == Vendor.id)
+        if direction == 'desc':
+            order = (Vendor.last_name.desc(), Vendor.first_name.desc())
+        else:
+            order = (Vendor.last_name, Vendor.first_name)
+    elif sort == 'equipment':
+        order = (Inventory.equipment_type.desc(),) if direction == 'desc' else (Inventory.equipment_type,)
+    elif sort == 'status':
+        order = (Inventory.status.desc(),) if direction == 'desc' else (Inventory.status,)
+    else:
+        sort = 'sku'
+        order = (Inventory.sku.desc(),) if direction == 'desc' else (Inventory.sku,)
+
+    inventory_items = query.order_by(*order).all()
     vendors = Vendor.query.filter_by(active=True).order_by(Vendor.last_name, Vendor.first_name).all()
 
     return render_template('inventory_list.html',
@@ -66,7 +82,9 @@ def inventory_list():
                          equipment_filter=equipment_filter,
                          vendor_filter=vendor_filter,
                          donate_filter=donate_filter,
-                         search=search)
+                         search=search,
+                         sort=sort,
+                         direction=direction)
 
 
 @inventory_bp.route('/inventory/new', methods=['GET', 'POST'])

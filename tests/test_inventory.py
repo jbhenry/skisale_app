@@ -1,7 +1,9 @@
 """
 Tests for inventory routes.
 """
-from models import Inventory
+import pytest
+
+from models import Inventory, Vendor
 
 
 class TestInventoryList:
@@ -29,6 +31,70 @@ class TestInventoryList:
     def test_search_by_description(self, client, sample_item):
         response = client.get('/inventory?search=Fischer')
         assert b'1234567' in response.data
+
+
+class TestInventorySort:
+    @pytest.fixture()
+    def second_item(self, db, sample_item):
+        vendor = Vendor(
+            first_name='Amy',
+            last_name='Adams',
+            commission_rate=0.20,
+            payment_method='Cash',
+            active=True,
+        )
+        db.session.add(vendor)
+        db.session.commit()
+        item = Inventory(
+            sku=1111111,
+            vendor_id=vendor.id,
+            equipment_type='Boots - Ski',
+            description='Salomon boots',
+            price=75.00,
+            status='Sold',
+        )
+        db.session.add(item)
+        db.session.commit()
+        return item
+
+    def test_default_sort_is_sku_ascending(self, client, sample_item, second_item):
+        response = client.get('/inventory')
+        assert response.data.index(b'1111111') < response.data.index(b'1234567')
+
+    def test_sort_by_sku_descending(self, client, sample_item, second_item):
+        response = client.get('/inventory?sort=sku&direction=desc')
+        assert response.data.index(b'1234567') < response.data.index(b'1111111')
+
+    def test_sort_by_vendor_ascending(self, client, sample_item, second_item):
+        # Amy Adams sorts before Jane Doe
+        response = client.get('/inventory?sort=vendor&direction=asc')
+        assert response.data.index(b'1111111') < response.data.index(b'1234567')
+
+    def test_sort_by_vendor_descending(self, client, sample_item, second_item):
+        response = client.get('/inventory?sort=vendor&direction=desc')
+        assert response.data.index(b'1234567') < response.data.index(b'1111111')
+
+    def test_sort_by_equipment_type_ascending(self, client, sample_item, second_item):
+        # 'Boots - Ski' sorts before 'Skis'
+        response = client.get('/inventory?sort=equipment&direction=asc')
+        assert response.data.index(b'1111111') < response.data.index(b'1234567')
+
+    def test_sort_by_equipment_type_descending(self, client, sample_item, second_item):
+        response = client.get('/inventory?sort=equipment&direction=desc')
+        assert response.data.index(b'1234567') < response.data.index(b'1111111')
+
+    def test_sort_by_status_ascending(self, client, sample_item, second_item):
+        # 'In-Stock' sorts before 'Sold'
+        response = client.get('/inventory?sort=status&direction=asc')
+        assert response.data.index(b'1234567') < response.data.index(b'1111111')
+
+    def test_sort_by_status_descending(self, client, sample_item, second_item):
+        response = client.get('/inventory?sort=status&direction=desc')
+        assert response.data.index(b'1111111') < response.data.index(b'1234567')
+
+    def test_invalid_sort_falls_back_to_sku(self, client, sample_item, second_item):
+        response = client.get('/inventory?sort=bogus')
+        assert response.data.index(b'1111111') < response.data.index(b'1234567')
 
 
 class TestInventoryCreate:
