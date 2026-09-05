@@ -8,6 +8,9 @@
 
 Set-Location -Path C:\skisale_app
 & .\Scripts\Activate.ps1
-python serve.py
 
-Read-Host "Press Enter to exit"
+try {
+    python serve.py
+} finally {
+    Read-Host "Press Enter to exit"
+}
