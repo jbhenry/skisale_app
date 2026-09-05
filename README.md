@@ -98,6 +98,13 @@ waitress-serve --host=0.0.0.0 --port=5000 app:app
 python serve.py
 ```
 
+Or run `start_server.ps1`, which does both steps (cd to `C:\skisale_app`, activate
+the venv, run `python serve.py`).
+
+> If running the script fails with a script execution policy error, open
+> PowerShell as Administrator once and run:
+> `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`
+
 - **Database**: `var/app-instance/skisale.db`
 - **Backups**: use the Backup button on the Admin page — saves a timestamped copy to `var/app-instance/backups/`
 - **Schema migrations**: handled automatically at startup via `ALTER TABLE` / table-recreate blocks in `app.py` — no Alembic needed
