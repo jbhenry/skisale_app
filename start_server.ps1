@@ -6,6 +6,13 @@
 #   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 # Then re-run this script normally.
 
+Write-Host "===================================================" -ForegroundColor Yellow
+Write-Host " SkiSale App server is running." -ForegroundColor Yellow
+Write-Host " DO NOT CLOSE THIS WINDOW - it will stop the server." -ForegroundColor Yellow
+Write-Host " Press Ctrl-C to stop the server." -ForegroundColor Yellow
+Write-Host "===================================================" -ForegroundColor Yellow
+Write-Host ""
+
 Set-Location -Path C:\skisale_app
 & .\Scripts\Activate.ps1
 
