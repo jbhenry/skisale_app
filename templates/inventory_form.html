@@ -95,7 +95,7 @@
                         <label for="description" class="form-label">Description</label>
                         <input type="text" class="form-control" id="description" 
                                name="description" maxlength="200"
-                               value="{{ item.description if item else '' }}"
+                               value="{{ item.description or '' if item else '' }}"
                                placeholder="e.g., Rossignol 170cm Skis, Black">
                         <small class="text-muted">Optional details about the item</small>
                     </div>
@@ -131,7 +131,7 @@
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes</label>
                         <textarea class="form-control" id="notes" name="notes"
-                                  rows="3" placeholder="Additional notes...">{{ item.notes if item else '' }}</textarea>
+                                  rows="3" placeholder="Additional notes...">{{ item.notes or '' if item else '' }}</textarea>
                     </div>
 
                     <!-- Buttons -->

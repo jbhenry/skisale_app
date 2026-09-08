@@ -67,14 +67,14 @@
                             <label for="phone" class="form-label">Phone</label>
                             <input type="tel" class="form-control" id="phone" 
                                    name="phone"
-                                   value="{{ vendor.phone if vendor else '' }}"
+                                   value="{{ vendor.phone or '' if vendor else '' }}"
                                    placeholder="(555) 123-4567">
                         </div>
                         <div class="col-md-6">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" 
                                    name="email"
-                                   value="{{ vendor.email if vendor else '' }}"
+                                   value="{{ vendor.email or '' if vendor else '' }}"
                                    placeholder="john.smith@email.com">
                         </div>
                     </div>
@@ -86,7 +86,7 @@
                         <label for="address1" class="form-label">Address Line 1</label>
                         <input type="text" class="form-control" id="address1" 
                                name="address1"
-                               value="{{ vendor.address1 if vendor else '' }}"
+                               value="{{ vendor.address1 or '' if vendor else '' }}"
                                placeholder="123 Main Street">
                     </div>
 
@@ -94,7 +94,7 @@
                         <label for="address2" class="form-label">Address Line 2</label>
                         <input type="text" class="form-control" id="address2" 
                                name="address2"
-                               value="{{ vendor.address2 if vendor else '' }}"
+                               value="{{ vendor.address2 or '' if vendor else '' }}"
                                placeholder="Apt 4B">
                     </div>
 
@@ -103,7 +103,7 @@
                             <label for="city" class="form-label">City</label>
                             <input type="text" class="form-control" id="city" 
                                    name="city"
-                                   value="{{ vendor.city if vendor else '' }}"
+                                   value="{{ vendor.city or '' if vendor else '' }}"
                                    placeholder="Denver">
                         </div>
                         <div class="col-md-3">
@@ -120,7 +120,7 @@
                             <label for="zip_code" class="form-label">ZIP Code</label>
                             <input type="text" class="form-control" id="zip_code" 
                                    name="zip_code"
-                                   value="{{ vendor.zip_code if vendor else '' }}"
+                                   value="{{ vendor.zip_code or '' if vendor else '' }}"
                                    placeholder="80202">
                         </div>
                     </div>
@@ -159,7 +159,7 @@
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes</label>
                         <textarea class="form-control" id="notes" name="notes" 
-                                  rows="3" placeholder="Additional notes...">{{ vendor.notes if vendor else '' }}</textarea>
+                                  rows="3" placeholder="Additional notes...">{{ vendor.notes or '' if vendor else '' }}</textarea>
                     </div>
 
                     <!-- Buttons -->
