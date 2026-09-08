@@ -92,11 +92,15 @@ def inventory_new():
     """Create new inventory item"""
     if request.method == 'POST':
         try:
+            description = request.form.get('description', '').strip()
+            if not description:
+                raise ValueError('Description is required')
+
             item = Inventory(
                 sku=int(request.form['sku']),
                 vendor_id=int(request.form['vendor_id']),
                 equipment_type=request.form['equipment_type'],
-                description=request.form.get('description', '').strip(),
+                description=description,
                 price=float(request.form['price']),
                 status=request.form['status'],
                 donate_if_not_sold=request.form.get('donate_if_not_sold') == 'on',
@@ -136,10 +140,14 @@ def inventory_edit(item_id):
 
     if request.method == 'POST':
         try:
+            description = request.form.get('description', '').strip()
+            if not description:
+                raise ValueError('Description is required')
+
             item.sku = int(request.form['sku'])
             item.vendor_id = int(request.form['vendor_id'])
             item.equipment_type = request.form['equipment_type']
-            item.description = request.form.get('description', '').strip()
+            item.description = description
             item.price = float(request.form['price'])
             item.status = request.form['status']
             item.donate_if_not_sold = request.form.get('donate_if_not_sold') == 'on'

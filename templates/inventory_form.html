@@ -92,12 +92,14 @@
 
                     <!-- Description -->
                     <div class="mb-3">
-                        <label for="description" class="form-label">Description</label>
-                        <input type="text" class="form-control" id="description" 
-                               name="description" maxlength="200"
+                        <label for="description" class="form-label">
+                            Description <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="description"
+                               name="description" required maxlength="200"
                                value="{{ item.description or '' if item else '' }}"
                                placeholder="e.g., Rossignol 170cm Skis, Black">
-                        <small class="text-muted">Optional details about the item</small>
+                         <small class="text-muted">Be as descriptive as possible. Include size, color, gender, etc. where applicable.</small>
                     </div>
 
                     <!-- Price -->

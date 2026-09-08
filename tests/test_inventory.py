@@ -133,6 +133,31 @@ class TestInventoryCreate:
 
         assert Inventory.query.filter_by(sku=1234567).count() == 1
 
+    def test_missing_description_rejected(self, client, db, sample_vendor):
+        response = client.post('/inventory/new', data={
+            'sku': '9999002',
+            'vendor_id': sample_vendor.id,
+            'equipment_type': 'Boots',
+            'price': '75.00',
+            'status': 'In-Stock',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert Inventory.query.filter_by(sku=9999002).first() is None
+
+    def test_blank_description_rejected(self, client, db, sample_vendor):
+        response = client.post('/inventory/new', data={
+            'sku': '9999003',
+            'vendor_id': sample_vendor.id,
+            'equipment_type': 'Boots',
+            'description': '   ',
+            'price': '75.00',
+            'status': 'In-Stock',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        assert Inventory.query.filter_by(sku=9999003).first() is None
+
 
 class TestInventoryEdit:
     def test_get_edit_form(self, client, sample_item):
@@ -158,6 +183,21 @@ class TestInventoryEdit:
     def test_edit_nonexistent_item(self, client):
         response = client.get('/inventory/9999/edit')
         assert response.status_code == 404
+
+    def test_edit_missing_description_rejected(self, client, db, sample_item, sample_vendor):
+        original_description = sample_item.description
+        response = client.post(f'/inventory/{sample_item.id}/edit', data={
+            'sku': str(sample_item.sku),
+            'vendor_id': sample_vendor.id,
+            'equipment_type': 'Skis',
+            'price': '200.00',
+            'status': 'In-Stock',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        db.session.refresh(sample_item)
+        assert sample_item.description == original_description
+        assert sample_item.price != 200.00
 
 
 class TestInventoryDelete:
@@ -188,6 +228,7 @@ class TestInventoryRegisterStamping:
             'sku': '9000001',
             'vendor_id': str(sample_vendor.id),
             'equipment_type': 'Skis',
+            'description': 'Test Skis',
             'price': '100',
             'status': 'In-Stock',
         })
@@ -215,6 +256,7 @@ class TestInventoryRegisterStamping:
             'sku': str(sample_item.sku),
             'vendor_id': str(sample_item.vendor_id),
             'equipment_type': sample_item.equipment_type,
+            'description': sample_item.description or 'Test Item',
             'price': str(sample_item.price),
             'status': sample_item.status,
         })
@@ -230,6 +272,7 @@ class TestInventoryRegisterStamping:
             'sku': str(sample_item.sku),
             'vendor_id': str(sample_item.vendor_id),
             'equipment_type': sample_item.equipment_type,
+            'description': sample_item.description or 'Test Item',
             'price': str(sample_item.price),
             'status': sample_item.status,
         })
