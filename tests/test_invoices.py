@@ -701,6 +701,32 @@ class TestDashboard:
         # $150 sale * 20% commission = $30 commission, $120 vendor payout
         assert b'159' in response.data or b'150' in response.data
 
+    def test_dashboard_shows_surcharge_in_money_flow(self, client, db, sample_vendor, sample_item, sample_invoice):
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=150.00,
+        )
+        db.session.add(line)
+        sample_item.status = 'Sold'
+        sample_invoice.payment_method = 'Credit Card'
+        sample_invoice.subtotal = 150.00
+        sample_invoice.tax_amount = 9.00
+        sample_invoice.surcharge_rate = 0.03
+        sample_invoice.surcharge_amount = 4.50
+        sample_invoice.total = 163.50
+        db.session.commit()
+
+        response = client.get('/')
+        assert response.status_code == 200
+        assert b'Credit Card / Venmo Surcharges' in response.data
+        assert b'4.50' in response.data
+
+    def test_dashboard_hides_surcharge_row_when_none(self, client, sample_vendor, sample_item, sample_invoice):
+        response = client.get('/')
+        assert response.status_code == 200
+        assert b'Credit Card / Venmo Surcharges' not in response.data
+
 
 class TestReleaseAbandonedInvoices:
     def test_pending_item_returned_to_stock(self, db, sample_vendor, sample_item, sample_invoice):

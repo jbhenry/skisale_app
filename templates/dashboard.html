@@ -162,6 +162,12 @@
                                 <td><strong>Sales Tax Collected:</strong></td>
                                 <td class="text-end">${{ "%.2f"|format(total_tax) }}</td>
                             </tr>
+                            {% if total_surcharge > 0 %}
+                            <tr>
+                                <td><strong>Credit Card / Venmo Surcharges:</strong></td>
+                                <td class="text-end">${{ "%.2f"|format(total_surcharge) }}</td>
+                            </tr>
+                            {% endif %}
                             <tr class="border-top">
                                 <td><strong>Total Revenue:</strong></td>
                                 <td class="text-end"><strong>${{ "%.2f"|format(total_sales) }}</strong></td>
