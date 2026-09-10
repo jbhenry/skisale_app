@@ -201,6 +201,10 @@ class TestVendorReceipt:
         response = client.get('/vendors/9999/receipt')
         assert response.status_code == 404
 
+    def test_receipt_shows_disclaimer(self, client, sample_vendor):
+        response = client.get(f'/vendors/{sample_vendor.id}/receipt')
+        assert b'WINTER SPORTS EQUIPMENT SALE' in response.data
+
 
 class TestVendorCheckoutReceipt:
     @pytest.fixture()

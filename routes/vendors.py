@@ -8,7 +8,7 @@ from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
-from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN, COMMISSION_RATES, VENDOR_PAYMENT_METHODS, DEFAULT_VENDOR_COMMISSION_RATE, SKU_MIN, SKU_MAX
+from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN, COMMISSION_RATES, VENDOR_PAYMENT_METHODS, DEFAULT_VENDOR_COMMISSION_RATE, SKU_MIN, SKU_MAX, VENDOR_CHECKIN_DISCLAIMER
 
 vendors_bp = Blueprint('vendors', __name__)
 
@@ -286,7 +286,8 @@ def vendor_receipt(vendor_id):
                        .all())
     return render_template('vendor_receipt.html', vendor=vendor,
                            checkedin_items=checkedin_items,
-                           now=datetime.now(EASTERN))
+                           now=datetime.now(EASTERN),
+                           disclaimer=VENDOR_CHECKIN_DISCLAIMER)
 
 
 @vendors_bp.route('/vendors/<int:vendor_id>/checkout-receipt')

@@ -7,8 +7,9 @@
     <style>
         @media print {
             .no-print { display: none !important; }
-            @page { margin: 0.75in; size: letter; }
+            @page { margin: 0.5in; size: letter; }
             body { font-size: 11pt; }
+            tfoot { display: table-row-group; }
         }
 
         body {
@@ -124,16 +125,6 @@
         tfoot tr.payout td { background: #d4edda; font-size: 15px; }
         tfoot td.right { text-align: right; }
 
-        /* ---- Footer ---- */
-        .receipt-footer {
-            margin-top: 32px;
-            border-top: 1px dashed #aaa;
-            padding-top: 16px;
-            font-size: 12px;
-            color: #555;
-            display: flex;
-            justify-content: space-between;
-        }
         .signature-line {
             margin-top: 40px;
             display: flex;
@@ -148,6 +139,19 @@
             margin-bottom: 4px;
         }
         .sig-label { font-size: 11px; color: #555; }
+
+        /* ---- Disclaimer ---- */
+        .disclaimer {
+            margin-top: 24px;
+            margin-bottom: 20px;
+            padding: 12px 16px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 10px;
+            line-height: 1.5;
+            color: #555;
+            white-space: pre-wrap;
+        }
 
         /* ---- Empty state ---- */
         .empty {
@@ -241,13 +245,18 @@
                 <td class="right" colspan="3">Commission ({{ (vendor.commission_rate * 100)|int }}%): ${{ "%.2f"|format(commission_amt) }}</td>
             </tr>
             <tr class="payout">
-                <td colspan="3"></td>
-                <td class="right" colspan="3">Estimated Payout: ${{ "%.2f"|format(payout_amt) }}</td>
+                <td colspan="2"></td>
+                <td class="right" colspan="4">Potential Payout (if all items sell): ${{ "%.2f"|format(payout_amt) }}</td>
             </tr>
         </tfoot>
     </table>
     {% else %}
     <div class="empty">No inventory on file for this vendor.</div>
+    {% endif %}
+
+    <!-- Disclaimer -->
+    {% if disclaimer %}
+    <div class="disclaimer">{{ disclaimer }}</div>
     {% endif %}
 
     <!-- Signature lines -->
@@ -264,16 +273,6 @@
             <div class="sig-line"></div>
             <div class="sig-label">Date</div>
         </div>
-    </div>
-
-    <!-- Footer -->
-    <div class="receipt-footer">
-        <span>Estimated payout is based on items currently In-Stock. Final payout calculated after items sell.<br>
-            Beginning Saturday afternoon, we will be posting the status of sold items on our website at
-            www.mtbrightonskipatrol.com. You can check there to see if your items have sold. Status will be updated 
-            periodically Saturday afternoon and Sunday.<br>
-            Unsold items must be picked up between 2:00 PM and 5:00 PM on Sunday. 
-            Unclaimed items will be considered donated and will be disposed of at our discretion.</span>
     </div>
 
 </body>

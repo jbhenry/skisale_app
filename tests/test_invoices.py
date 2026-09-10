@@ -439,6 +439,10 @@ class TestInvoiceReceipt:
         response = client.get('/invoices/9999/receipt')
         assert response.status_code == 404
 
+    def test_receipt_shows_disclaimer(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/receipt')
+        assert b'NOTICE-DISCLAIMER' in response.data
+
 
 class TestInvoiceReturnItem:
     def test_return_item_sets_in_stock(self, client, db, sample_item, sample_invoice):

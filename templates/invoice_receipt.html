@@ -110,6 +110,15 @@
             margin: 3px 0;
         }
 
+        .disclaimer {
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px dashed #000;
+            font-size: 7pt;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
         .print-button {
             text-align: center;
             margin: 20px 0;
@@ -216,5 +225,9 @@
         <p style="margin-top: 8px;"><em>{{ invoice.notes }}</em></p>
         {% endif %}
     </div>
+
+    {% if disclaimer %}
+    <div class="disclaimer">{{ disclaimer }}</div>
+    {% endif %}
 </body>
 </html>
