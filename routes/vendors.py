@@ -96,7 +96,7 @@ def vendors_list():
         active_only = active_only == 'true'
 
     search = request.args.get('search', '')
-    sort = request.args.get('sort', 'name')
+    sort = request.args.get('sort', 'id')
     direction = request.args.get('direction', 'asc')
 
     # Build query
@@ -178,6 +178,13 @@ def vendor_edit(vendor_id):
 
     if request.method == 'POST':
         try:
+            new_active = request.form.get('active') == 'on'
+            if vendor.active and not new_active and vendor.inventory_items:
+                flash(f'Cannot deactivate vendor "{vendor.full_name}" — they still have inventory items.', 'error')
+                return render_template('vendor_form.html', vendor=vendor, action='Edit',
+                                       commission_rates=COMMISSION_RATES,
+                                       vendor_payment_methods=VENDOR_PAYMENT_METHODS)
+
             vendor.first_name = request.form['first_name'].strip()
             vendor.last_name = request.form['last_name'].strip()
             vendor.phone = request.form.get('phone', '').strip()
@@ -190,7 +197,7 @@ def vendor_edit(vendor_id):
             vendor.commission_rate = float(request.form.get('commission_rate', DEFAULT_VENDOR_COMMISSION_RATE * 100)) / 100
             vendor.payment_method = request.form.get('payment_method', '').strip()
             vendor.notes = request.form.get('notes', '').strip()
-            vendor.active = request.form.get('active') == 'on'
+            vendor.active = new_active
             vendor.updated_by = session.get('register_id')
 
             db.session.commit()
@@ -212,6 +219,14 @@ def vendor_delete(vendor_id):
     """Delete vendor (soft delete by setting active=False)"""
     vendor = db.get_or_404(Vendor, vendor_id)
 
+    if vendor.inventory_items:
+        flash(f'Cannot deactivate vendor "{vendor.full_name}" — they still have inventory items.', 'error')
+        return redirect(url_for('vendors.vendors_list',
+            search=request.form.get('search', ''),
+            active_only=request.form.get('active_only', 'false'),
+            sort=request.form.get('sort', 'id'),
+            direction=request.form.get('direction', 'asc')))
+
     try:
         vendor.active = False
         vendor.updated_by = session.get('register_id')
@@ -224,7 +239,7 @@ def vendor_delete(vendor_id):
     return redirect(url_for('vendors.vendors_list',
         search=request.form.get('search', ''),
         active_only=request.form.get('active_only', 'false'),
-        sort=request.form.get('sort', 'name'),
+        sort=request.form.get('sort', 'id'),
         direction=request.form.get('direction', 'asc')))
 
 
@@ -242,10 +257,13 @@ def vendor_reactivate(vendor_id):
         db.session.rollback()
         flash(f'Error reactivating vendor: {str(e)}', 'error')
 
+    if request.form.get('next') == 'view':
+        return redirect(url_for('vendors.vendor_view', vendor_id=vendor.id))
+
     return redirect(url_for('vendors.vendors_list',
         search=request.form.get('search', ''),
         active_only=request.form.get('active_only', 'false'),
-        sort=request.form.get('sort', 'name'),
+        sort=request.form.get('sort', 'id'),
         direction=request.form.get('direction', 'asc')))
 
 

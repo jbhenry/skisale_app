@@ -35,6 +35,22 @@ class TestVendorList:
         response = client.get('/vendors?search=nobody')
         assert b'Jane' not in response.data
 
+    def test_default_sort_is_id_ascending(self, client, db, sample_vendor):
+        # Second vendor's name sorts before "Doe" alphabetically but has a
+        # higher ID, so ID-ascending and name-ascending disagree.
+        second = Vendor(
+            first_name='Amy',
+            last_name='Adams',
+            commission_rate=0.20,
+            payment_method='Cash',
+            active=True,
+        )
+        db.session.add(second)
+        db.session.commit()
+
+        response = client.get('/vendors')
+        assert response.data.index(b'Jane') < response.data.index(b'Amy')
+
 
 class TestVendorCreate:
     def test_get_new_form(self, client):
@@ -90,6 +106,29 @@ class TestVendorEdit:
         response = client.get('/vendors/9999/edit')
         assert response.status_code == 404
 
+    def test_deactivate_via_edit_blocked_when_vendor_has_inventory(self, client, db, sample_vendor, sample_item):
+        response = client.post(f'/vendors/{sample_vendor.id}/edit', data={
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'commission_rate': '20',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.active is True
+        assert b'Cannot deactivate' in response.data
+
+    def test_edit_without_inventory_can_deactivate(self, client, db, sample_vendor):
+        response = client.post(f'/vendors/{sample_vendor.id}/edit', data={
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'commission_rate': '20',
+        }, follow_redirects=True)
+
+        assert response.status_code == 200
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.active is False
+
 
 class TestVendorDelete:
     def test_soft_delete_sets_inactive(self, client, db, sample_vendor):
@@ -103,6 +142,13 @@ class TestVendorDelete:
         vendor_id = sample_vendor.id
         client.post(f'/vendors/{vendor_id}/delete')
         assert db.session.get(Vendor, vendor_id) is not None
+
+    def test_deactivate_blocked_when_vendor_has_inventory(self, client, db, sample_vendor, sample_item):
+        response = client.post(f'/vendors/{sample_vendor.id}/delete', follow_redirects=True)
+        assert response.status_code == 200
+        db.session.refresh(sample_vendor)
+        assert sample_vendor.active is True
+        assert b'Cannot deactivate' in response.data
 
 
 class TestVendorView:
@@ -565,3 +611,25 @@ class TestVendorReactivate:
     def test_reactivate_nonexistent_vendor_returns_404(self, client):
         response = client.post('/vendors/9999/reactivate')
         assert response.status_code == 404
+
+    def test_reactivate_with_next_view_redirects_to_vendor_detail(self, client, db, sample_vendor):
+        sample_vendor.active = False
+        db.session.commit()
+
+        response = client.post(f'/vendors/{sample_vendor.id}/reactivate', data={'next': 'view'})
+
+        assert response.status_code == 302
+        assert response.location == f'/vendors/{sample_vendor.id}'
+
+
+class TestVendorViewActivateButton:
+    def test_activate_button_shown_when_inactive(self, client, db, sample_vendor):
+        sample_vendor.active = False
+        db.session.commit()
+
+        response = client.get(f'/vendors/{sample_vendor.id}')
+        assert b'Activate' in response.data
+
+    def test_activate_button_hidden_when_active(self, client, sample_vendor):
+        response = client.get(f'/vendors/{sample_vendor.id}')
+        assert b'Activate' not in response.data

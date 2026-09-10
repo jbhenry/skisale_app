@@ -23,6 +23,14 @@
                 <a href="{{ url_for('vendors.vendor_edit', vendor_id=vendor.id) }}" class="btn btn-primary">
                     <i class="bi bi-pencil"></i> Edit
                 </a>
+                {% if not vendor.active %}
+                <form method="POST" action="{{ url_for('vendors.vendor_reactivate', vendor_id=vendor.id) }}" style="display:inline;">
+                    <input type="hidden" name="next" value="view">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-arrow-counterclockwise"></i> Activate
+                    </button>
+                </form>
+                {% endif %}
             </div>
         </div>
 
