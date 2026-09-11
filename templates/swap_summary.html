@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swap Summary - {{ generated_at.strftime('%B %d, %Y') }}</title>
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            @page { margin: 0.5in; size: letter; }
+            body { font-size: 11pt; }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+            color: #111;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        .btn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary { background: #0d6efd; color: #fff; }
+        .btn-secondary { background: #6c757d; color: #fff; }
+
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #000;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+        }
+        .org-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 0 4px 0;
+        }
+        .org-sub {
+            font-size: 13px;
+            color: #555;
+        }
+        .summary-title {
+            text-align: right;
+        }
+        .summary-title h2 {
+            margin: 0 0 4px 0;
+            font-size: 18px;
+        }
+        .summary-title .date {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h3 {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #666;
+            margin: 0 0 10px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .stat-grid {
+            display: flex;
+            gap: 12px;
+        }
+        .stat-box {
+            flex: 1;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+        .stat-box .num {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .stat-box .label {
+            font-size: 11px;
+            color: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        table td, table th {
+            padding: 5px 8px;
+            border-bottom: 1px solid #eee;
+        }
+        table th {
+            text-align: left;
+            color: #666;
+            font-weight: normal;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+        td.right, th.right { text-align: right; }
+        tr.total td {
+            border-top: 2px solid #000;
+            font-weight: bold;
+        }
+        tr.sub td { padding-left: 20px; color: #555; }
+
+        .two-col {
+            display: flex;
+            gap: 30px;
+        }
+        .two-col > div { flex: 1; }
+
+        .footer-note {
+            margin-top: 24px;
+            font-size: 10px;
+            color: #888;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Screen-only toolbar -->
+    <div class="toolbar no-print">
+        <button class="btn btn-primary" onclick="window.print()">&#128438; Print Summary</button>
+        <button class="btn btn-secondary" onclick="window.close()">Close</button>
+    </div>
+
+    <!-- Header -->
+    <div class="summary-header">
+        <div>
+            <p class="org-name">Mt. Brighton Ski Patrol Ski Swap</p>
+            <p class="org-sub">Consignment Ski Sale</p>
+        </div>
+        <div class="summary-title">
+            <h2>Swap Summary</h2>
+            <p class="date">As of {{ generated_at.strftime('%B %d, %Y %I:%M %p') }}</p>
+        </div>
+    </div>
+
+    <div class="two-col">
+        <div>
+            <!-- Vendors & Inventory -->
+            <div class="section">
+                <h3>Vendors &amp; Inventory</h3>
+                <div class="stat-grid">
+                    <div class="stat-box">
+                        <div class="num">{{ active_vendors }}</div>
+                        <div class="label">Active Vendors</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="num">{{ total_inventory }}</div>
+                        <div class="label">Total Items</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="num">{{ num_invoices }}</div>
+                        <div class="label">Invoices</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventory by Status -->
+            <div class="section">
+                <h3>Inventory by Status</h3>
+                <table>
+                    {% for status, count in inventory_by_status.items() %}
+                    <tr>
+                        <td>{{ status }}</td>
+                        <td class="right">{{ count }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+            <!-- Sales by Payment Type -->
+            <div class="section">
+                <h3>Sales by Payment Type</h3>
+                {% if payment_breakdown %}
+                <table>
+                    <tr>
+                        <th>Method</th>
+                        <th class="right">Count</th>
+                        <th class="right">Total</th>
+                    </tr>
+                    {% for method, data in payment_breakdown.items() %}
+                    <tr>
+                        <td>{{ method }}</td>
+                        <td class="right">{{ data.count }}</td>
+                        <td class="right">${{ "%.2f"|format(data.total) }}</td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <p style="color:#888; font-size:12px;">No sales recorded yet.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div>
+            <!-- Financial Summary -->
+            <div class="section">
+                <h3>Financial Summary</h3>
+                <table>
+                    <tr>
+                        <td><strong>Items Sold (subtotal)</strong></td>
+                        <td class="right">${{ "%.2f"|format(total_subtotal) }}</td>
+                    </tr>
+                    {% if total_discounts > 0 %}
+                    <tr class="sub">
+                        <td>Employee Discounts</td>
+                        <td class="right">-${{ "%.2f"|format(total_discounts) }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="sub">
+                        <td>Vendor Payouts</td>
+                        <td class="right">${{ "%.2f"|format(total_vendor_payout) }}</td>
+                    </tr>
+                    <tr class="sub">
+                        <td>Our Commission</td>
+                        <td class="right">${{ "%.2f"|format(total_commission) }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sales Tax Collected</strong></td>
+                        <td class="right">${{ "%.2f"|format(total_tax) }}</td>
+                    </tr>
+                    {% if total_surcharge > 0 %}
+                    <tr>
+                        <td><strong>CC / Venmo Surcharges</strong></td>
+                        <td class="right">${{ "%.2f"|format(total_surcharge) }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="total">
+                        <td>Total Revenue</td>
+                        <td class="right">${{ "%.2f"|format(total_sales) }}</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="section">
+                <h3>What We Owe / Keep</h3>
+                <table>
+                    <tr>
+                        <td>Vendor Payouts</td>
+                        <td class="right">${{ "%.2f"|format(total_vendor_payout) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Sales Tax (to state)</td>
+                        <td class="right">${{ "%.2f"|format(total_tax) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Our Commission (kept)</td>
+                        <td class="right">${{ "%.2f"|format(total_commission) }}</td>
+                    </tr>
+                    <tr class="total">
+                        <td>Net Cash on Hand</td>
+                        <td class="right">${{ "%.2f"|format(total_sales) }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-note">Generated {{ generated_at.strftime('%B %d, %Y %I:%M %p %Z') }}</div>
+
+</body>
+</html>

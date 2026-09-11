@@ -323,6 +323,40 @@ class TestAdminPage:
         response = client.post('/admin')
         assert response.status_code == 405
 
+    def test_admin_page_links_to_summary(self, client):
+        response = client.get('/admin')
+        assert b'/admin/summary' in response.data
+
+
+class TestSwapSummary:
+
+    def test_summary_returns_200(self, client):
+        response = client.get('/admin/summary')
+        assert response.status_code == 200
+
+    def test_summary_shows_vendor_and_inventory_counts(self, client, sample_vendor, sample_item):
+        response = client.get('/admin/summary')
+        assert b'Active Vendors' in response.data
+        assert b'Total Items' in response.data
+
+    def test_summary_shows_financial_totals(self, client, db, sample_vendor, sample_item, sample_invoice):
+        from models import InvoiceLine
+        line = InvoiceLine(
+            invoice_id=sample_invoice.id,
+            inventory_id=sample_item.id,
+            price=150.00,
+        )
+        db.session.add(line)
+        sample_item.status = 'Sold'
+        sample_invoice.subtotal = 150.00
+        sample_invoice.tax_amount = 9.00
+        sample_invoice.total = 159.00
+        db.session.commit()
+
+        response = client.get('/admin/summary')
+        assert response.status_code == 200
+        assert b'159.00' in response.data
+
 
 # ---------------------------------------------------------------------------
 # Inventory CSV Export  (/admin/export-inventory-csv)

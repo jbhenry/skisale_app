@@ -19,7 +19,8 @@ from reportlab.lib import colors as rl_colors
 from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine
-from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START
+from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START, EASTERN
+from routes.vendors import compute_swap_metrics
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -144,6 +145,15 @@ def _amount_to_words(amount):
 def admin():
     """Administration page — not linked from main navigation"""
     return render_template('admin.html')
+
+
+@admin_bp.route('/admin/summary')
+def admin_summary():
+    """Printable one-page summary of the swap's current status."""
+    metrics = compute_swap_metrics()
+    return render_template('swap_summary.html',
+                           generated_at=datetime.now(EASTERN),
+                           **metrics)
 
 
 

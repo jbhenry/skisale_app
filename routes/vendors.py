@@ -21,9 +21,9 @@ def require_register_for_writes():
             return redirect(request.referrer or url_for('vendors.vendors_list'))
 
 
-@vendors_bp.route('/')
-def index():
-    """Dashboard - Home page with sales metrics"""
+def compute_swap_metrics():
+    """Gather the sales/inventory/vendor metrics shared by the dashboard and
+    the printable swap summary."""
     # Vendor metrics
     active_vendors = Vendor.query.filter_by(active=True).count()
 
@@ -70,19 +70,26 @@ def index():
         sorted(payment_breakdown.items(), key=lambda x: x[1]['total'], reverse=True)
     )
 
-    return render_template('dashboard.html',
-                         active_vendors=active_vendors,
-                         total_inventory=total_inventory,
-                         inventory_by_status=inventory_by_status,
-                         total_sales=total_sales,
-                         total_tax=total_tax,
-                         total_subtotal=total_subtotal,
-                         total_discounts=total_discounts,
-                         total_surcharge=total_surcharge,
-                         total_vendor_payout=total_vendor_payout,
-                         total_commission=total_commission,
-                         num_invoices=len(all_invoices),
-                         payment_breakdown=payment_breakdown)
+    return dict(
+        active_vendors=active_vendors,
+        total_inventory=total_inventory,
+        inventory_by_status=inventory_by_status,
+        total_sales=total_sales,
+        total_tax=total_tax,
+        total_subtotal=total_subtotal,
+        total_discounts=total_discounts,
+        total_surcharge=total_surcharge,
+        total_vendor_payout=total_vendor_payout,
+        total_commission=total_commission,
+        num_invoices=len(all_invoices),
+        payment_breakdown=payment_breakdown,
+    )
+
+
+@vendors_bp.route('/')
+def index():
+    """Dashboard - Home page with sales metrics"""
+    return render_template('dashboard.html', **compute_swap_metrics())
 
 
 @vendors_bp.route('/vendors')
