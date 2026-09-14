@@ -7,6 +7,10 @@
 # Run this from an elevated Command Prompt or PowerShell window
 # (Run as Administrator). Safe to re-run; /f replaces an existing task.
 #
+# If you get "running scripts is disabled on this system", run it with the
+# execution policy bypassed for just this command:
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\skisale_app\register-backup-client-task.ps1
+#
 # Adjust the script path below if your setup differs.
 #
 # /ri 30 repeats every 30 minutes; /du 08:01 (just over 8 hours) makes sure

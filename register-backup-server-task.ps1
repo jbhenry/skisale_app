@@ -3,6 +3,10 @@
 # Requires an elevated PowerShell prompt (Run as Administrator).
 # Safe to re-run; -Force replaces an existing task.
 #
+# If you get "running scripts is disabled on this system", run it with the
+# execution policy bypassed for just this command:
+#   powershell -NoProfile -ExecutionPolicy Bypass -File C:\skisale_app\register-backup-server-task.ps1
+#
 # Adjust the script path below if your setup differs.
 
 $scriptPath = "C:\skisale_app\backup-server.ps1"
