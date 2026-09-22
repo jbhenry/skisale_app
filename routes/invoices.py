@@ -226,11 +226,15 @@ def invoice_return_item(invoice_id):
 
     try:
         sku = line.inventory_item.sku
+        refund = line.refund_amount
         line.inventory_item.status = 'In-Stock'
-        db.session.delete(line)
+        # Remove from the collection (delete-orphan cascade deletes the row) so
+        # the recalculation below never sees the returned line.
+        invoice.lines.remove(line)
+        db.session.flush()
         invoice.calculate_totals()
         db.session.commit()
-        flash(f'Item {sku} returned to stock.', 'success')
+        flash(f'Item {sku} returned to stock. Refund ${refund:.2f} to the customer.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error returning item: {str(e)}', 'error')

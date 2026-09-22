@@ -189,6 +189,33 @@ class InvoiceLine(db.Model):
     
     def __repr__(self):
         return f'<InvoiceLine Invoice:{self.invoice_id} Item:{self.inventory_id}>'
+
+    @property
+    def refund_breakdown(self):
+        """Customer-facing refund for returning this line.
+
+        Uses the rates stored on the invoice — i.e. what the customer actually
+        paid — so the refund backs out the employee discount and gives back the
+        sales tax and any card/Venmo surcharge charged on this item.
+        """
+        invoice = self.invoice
+        discount = round(self.price * invoice.discount_rate, 2)
+        net = round(self.price - discount, 2)
+        tax = round(net * invoice.tax_rate, 2)
+        surcharge = round(net * invoice.surcharge_rate, 2)
+        return {
+            'price': self.price,
+            'discount': discount,
+            'net': net,
+            'tax': tax,
+            'surcharge': surcharge,
+            'total': round(net + tax + surcharge, 2),
+        }
+
+    @property
+    def refund_amount(self):
+        """Total dollars to hand back to the customer for this line."""
+        return self.refund_breakdown['total']
     
     def to_dict(self):
         """Convert to dictionary for JSON responses"""

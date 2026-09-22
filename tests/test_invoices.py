@@ -894,3 +894,62 @@ class TestCancelInvoiceButton:
         assert db.session.get(Invoice, invoice_id) is None
         db.session.refresh(sample_item)
         assert sample_item.status == 'In-Stock'
+
+
+class TestInvoiceReturnRefund:
+    """The refund shown in returns mode must back out the employee discount and
+    give back the sales tax and card/Venmo surcharge the customer paid."""
+
+    def _sell(self, client, db, item, invoice, discount_pct=0, payment_method='Cash'):
+        client.post(f'/invoices/{invoice.id}/edit', data={'action': 'add_item', 'sku': item.sku})
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'complete',
+            'customer_name': 'Bob Smith',
+            'tax_rate': '6',
+            'discount_rate': str(discount_pct),
+            'payment_method': payment_method,
+        })
+        db.session.refresh(invoice)
+        return invoice.lines[0]
+
+    def test_refund_includes_tax(self, client, db, sample_item, sample_invoice):
+        line = self._sell(client, db, sample_item, sample_invoice)
+        # 150.00 + 6% tax
+        assert line.refund_amount == 159.00
+
+    def test_refund_includes_surcharge(self, client, db, sample_item, sample_invoice):
+        line = self._sell(client, db, sample_item, sample_invoice, payment_method='Credit Card')
+        # 150.00 + 6% tax + 3% surcharge
+        assert line.refund_amount == 163.50
+
+    def test_refund_backs_out_employee_discount(self, client, db, sample_item, sample_invoice):
+        line = self._sell(client, db, sample_item, sample_invoice, discount_pct=10)
+        # 150.00 - 10% = 135.00, + 6% tax
+        assert line.refund_amount == 143.10
+
+    def test_refund_with_discount_tax_and_surcharge(self, client, db, sample_item, sample_invoice):
+        line = self._sell(client, db, sample_item, sample_invoice,
+                          discount_pct=10, payment_method='Venmo')
+        # 135.00 + 8.10 tax + 4.05 surcharge
+        assert line.refund_amount == 147.15
+
+    def test_refund_matches_drop_in_invoice_total(self, client, db, sample_item, sample_invoice):
+        line = self._sell(client, db, sample_item, sample_invoice,
+                          discount_pct=10, payment_method='Credit Card')
+        before = sample_invoice.total
+        refund = line.refund_amount
+        client.post(f'/invoices/{sample_invoice.id}/return_item', data={'line_id': line.id})
+        db.session.refresh(sample_invoice)
+        assert round(before - sample_invoice.total, 2) == refund
+
+    def test_return_flashes_refund_amount(self, client, db, sample_item, sample_invoice):
+        line = self._sell(client, db, sample_item, sample_invoice, payment_method='Credit Card')
+        response = client.post(f'/invoices/{sample_invoice.id}/return_item',
+                               data={'line_id': line.id}, follow_redirects=True)
+        assert b'Refund $163.50' in response.data
+
+    def test_returns_mode_shows_refund_column(self, client, db, sample_item, sample_invoice):
+        self._sell(client, db, sample_item, sample_invoice, payment_method='Credit Card')
+        response = client.get(f'/invoices/{sample_invoice.id}?returns=1')
+        assert b'Refund' in response.data
+        assert b'163.50' in response.data
