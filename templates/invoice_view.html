@@ -59,6 +59,8 @@
         {% if returns_mode %}
         <div class="alert alert-warning">
             <i class="bi bi-arrow-return-left"></i> <strong>Returns Mode</strong> — click <strong>Return</strong> on any item to remove it from this invoice and put it back in stock.
+            The <strong>Refund</strong> column is the amount to hand back to the customer: the item price less any
+            discount, plus the sales tax{% if invoice.surcharge_rate %} and {{ invoice.payment_method }} surcharge{% endif %} they paid on it.
         </div>
         {% endif %}
 
@@ -77,7 +79,7 @@
                                 <th>Equipment Type</th>
                                 <th>Vendor</th>
                                 <th class="text-end">Price</th>
-                                {% if returns_mode %}<th></th>{% endif %}
+                                {% if returns_mode %}<th class="text-end">Refund</th><th></th>{% endif %}
                             </tr>
                         </thead>
                         <tbody>
@@ -93,11 +95,12 @@
                                 </td>
                                 <td class="text-end">${{ "%.2f"|format(line.price) }}</td>
                                 {% if returns_mode %}
+                                <td class="text-end"><strong>${{ "%.2f"|format(line.refund_amount) }}</strong></td>
                                 <td>
                                     <form method="POST" action="{{ url_for('invoices.invoice_return_item', invoice_id=invoice.id) }}" style="display:inline;">
                                         <input type="hidden" name="line_id" value="{{ line.id }}">
                                         <button type="submit" class="btn btn-sm btn-warning"
-                                                onclick="return confirm('Return {{ line.inventory_item.sku }} to stock?')">
+                                                onclick="return confirm('Return {{ line.inventory_item.sku }} to stock and refund ${{ "%.2f"|format(line.refund_amount) }} to the customer?')">
                                             <i class="bi bi-arrow-return-left"></i> Return
                                         </button>
                                     </form>
