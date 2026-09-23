@@ -5,7 +5,7 @@ import csv
 import io
 import os
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from itertools import groupby
 
 import openpyxl
@@ -18,7 +18,7 @@ from reportlab.lib import colors as rl_colors
 
 from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file
 
-from models import db, Vendor, Inventory, Invoice, InvoiceLine
+from models import db, Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn
 from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START, EASTERN
 from routes.vendors import compute_swap_metrics
 
@@ -484,6 +484,99 @@ def admin_report_discounts():
     ws.freeze_panes = 'A3'
 
     return _xlsx_response(wb, f'discounts_report_{date.today().isoformat()}.xlsx')
+
+
+@admin_bp.route('/admin/report-returns')
+def admin_report_returns():
+    """Download xlsx of every item returned from an invoice, with refund amounts."""
+    returns = (InvoiceReturn.query
+               .order_by(InvoiceReturn.returned_at, InvoiceReturn.id)
+               .all())
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = 'Returns'
+
+    header_font = Font(bold=True, color=_REPORT_HEADER_COLOR)
+    header_fill = PatternFill('solid', fgColor=_REPORT_HEADER_FILL)
+    center    = Alignment(horizontal='center')
+    money_fmt = '"$"#,##0.00'
+    thin      = Side(style='thin')
+
+    headers = [
+        'Returned (ET)', 'Invoice #', 'Customer', 'Refund To',
+        'SKU', 'Description', 'Price', 'Discount', 'Tax', 'Surcharge',
+        'Refund', 'Register ID',
+    ]
+    num_cols = len(headers)
+
+    # Title row
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
+    title_cell = ws.cell(1, 1, value='Returns Report')
+    title_cell.font      = Font(bold=True, size=_REPORT_TITLE_SIZE)
+    title_cell.alignment = Alignment(horizontal='center')
+
+    # Header row (row 2)
+    ws.append(headers)
+    for col in range(1, num_cols + 1):
+        cell = ws.cell(row=2, column=col)
+        cell.font      = header_font
+        cell.fill      = header_fill
+        cell.alignment = center
+
+    # Data rows
+    for ret in returns:
+        inv = ret.invoice
+        returned = ret.returned_at
+        if returned.tzinfo is None:
+            returned = returned.replace(tzinfo=timezone.utc)
+        ws.append([
+            returned.astimezone(EASTERN).replace(tzinfo=None),
+            inv.id,
+            inv.customer_name or '',
+            inv.payment_method or '',
+            ret.sku,
+            ret.description or ret.equipment_type or '',
+            ret.price,
+            ret.discount,
+            ret.tax,
+            ret.surcharge,
+            ret.refund_amount,
+            ret.register_id or '',
+        ])
+        r = ws.max_row
+        ws.cell(r, 1).number_format = 'yyyy-mm-dd hh:mm'
+        for col in (7, 8, 9, 10, 11):
+            ws.cell(r, col).number_format = money_fmt
+        ws.cell(r, 2).alignment = center
+        ws.cell(r, 5).alignment = center
+
+    # Totals row
+    if returns:
+        data_start = 3
+        data_end   = ws.max_row
+        ws.append([])
+        total_row = ws.max_row + 1
+        ws.cell(total_row, 6, value=f'TOTALS ({len(returns)} items):').font = Font(bold=True)
+        for col in (7, 8, 9, 10, 11):
+            letter = get_column_letter(col)
+            cell = ws.cell(total_row, col,
+                           value=f'=SUM({letter}{data_start}:{letter}{data_end})')
+            cell.number_format = money_fmt
+            cell.font   = Font(bold=True)
+            cell.border = Border(top=thin, bottom=Side(style='double'))
+
+    col_widths = [18, 10, 24, 14, 10, 30, 12, 12, 12, 12, 12, 16]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+    ws.freeze_panes = 'A3'
+    ws.page_setup.orientation = 'landscape'
+    ws.page_setup.fitToWidth = 1
+    ws.page_setup.fitToHeight = 0
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_title_rows = '2:2'
+
+    return _xlsx_response(wb, f'returns_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/report-sales-by-register')

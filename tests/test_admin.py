@@ -6,7 +6,7 @@ import pytest
 from datetime import date
 from unittest.mock import patch, MagicMock
 import openpyxl
-from models import Vendor, Inventory, Invoice, InvoiceLine
+from models import Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn
 
 XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
@@ -550,3 +550,60 @@ class TestBackupDb:
     def test_post_follows_redirect_to_admin(self, client):
         response = client.post('/admin/backup-db', follow_redirects=True)
         assert response.status_code == 200
+
+
+class TestReturnsReport:
+    @pytest.fixture
+    def returned_item(self, db):
+        inv = Invoice(customer_name='Bob Smith', tax_rate=0.06,
+                      payment_method='Credit Card', register_id='Register 1')
+        db.session.add(inv)
+        db.session.flush()
+        ret = InvoiceReturn(invoice_id=inv.id, register_id='Register 2',
+                            sku=1234, description='K2 Skis', equipment_type='Skis',
+                            price=150.00, discount=15.00, tax=8.10,
+                            surcharge=4.05, refund_amount=147.15)
+        db.session.add(ret)
+        db.session.commit()
+        return ret
+
+    def test_returns_xlsx(self, client, returned_item):
+        response = client.get('/admin/report-returns')
+        assert response.status_code == 200
+        assert response.content_type == XLSX_MIME
+
+    def test_filename_contains_date(self, client, returned_item):
+        response = client.get('/admin/report-returns')
+        cd = response.headers['Content-Disposition']
+        assert f'returns_report_{date.today().isoformat()}' in cd
+
+    def test_title_and_headers(self, client, returned_item):
+        ws = parse_xlsx(client.get('/admin/report-returns')).active
+        assert ws.cell(1, 1).value == 'Returns Report'
+        assert ws.cell(2, 11).value == 'Refund'
+
+    def test_data_row_values(self, client, returned_item):
+        ws = parse_xlsx(client.get('/admin/report-returns')).active
+        assert ws.cell(3, 2).value == returned_item.invoice_id
+        assert ws.cell(3, 3).value == 'Bob Smith'
+        assert ws.cell(3, 4).value == 'Credit Card'
+        assert ws.cell(3, 5).value == 1234
+        assert ws.cell(3, 6).value == 'K2 Skis'
+        assert ws.cell(3, 8).value == pytest.approx(15.00)
+        assert ws.cell(3, 10).value == pytest.approx(4.05)
+        assert ws.cell(3, 11).value == pytest.approx(147.15)
+        assert ws.cell(3, 12).value == 'Register 2'
+
+    def test_totals_row(self, client, returned_item):
+        ws = parse_xlsx(client.get('/admin/report-returns')).active
+        refund_col = [ws.cell(r, 11).value for r in range(4, ws.max_row + 1)]
+        assert '=SUM(K3:K3)' in refund_col
+
+    def test_empty_db_returns_200(self, client, db):
+        response = client.get('/admin/report-returns')
+        assert response.status_code == 200
+        assert response.content_type == XLSX_MIME
+
+    def test_link_present_on_admin_page(self, client):
+        response = client.get('/admin')
+        assert b'Returns Report' in response.data
