@@ -44,6 +44,19 @@ def _xlsx_response(wb, filename):
     )
 
 
+def _eastern(dt):
+    """Convert a stored UTC datetime to naive US Eastern for report cells.
+
+    openpyxl can't write timezone-aware datetimes, and SQLite hands back
+    naive values, so treat naive as UTC, convert, then drop the tzinfo.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(EASTERN).replace(tzinfo=None)
+
+
 _SUM_RE = re.compile(r'^=SUM\(([A-Z]+)(\d+):([A-Z]+)(\d+)\)$')
 
 
@@ -416,7 +429,7 @@ def admin_report_salestax():
 
     # Header row (row 2)
     headers = [
-        'Invoice #', 'Date / Time', 'Customer',
+        'Invoice #', 'Date / Time (ET)', 'Customer',
         'Payment Method', 'Subtotal', 'Tax Rate', 'Tax Collected', 'Total'
     ]
     ws.append(headers)
@@ -430,7 +443,7 @@ def admin_report_salestax():
     for inv in invoices:
         ws.append([
             inv.id,
-            inv.invoice_date,
+            _eastern(inv.invoice_date),
             inv.customer_name or '',
             inv.payment_method or '',
             inv.subtotal,
@@ -494,10 +507,10 @@ def admin_report_discounts():
     # Header row (row 2)
     num_cols = 11
     headers = [
-        'Invoice #', 'Date / Time', 'Customer',
+        'Invoice #', 'Date / Time (ET)', 'Customer',
         'Payment Method', 'Subtotal', 'Discount %', 'Discount Amount',
         'Tax', 'Total',
-        'Register ID', 'Created At',
+        'Register ID', 'Created At (ET)',
     ]
     ws.append(headers)
     for col in range(1, len(headers) + 1):
@@ -510,7 +523,7 @@ def admin_report_discounts():
     for inv in invoices:
         ws.append([
             inv.id,
-            inv.invoice_date,
+            _eastern(inv.invoice_date),
             inv.customer_name or '',
             inv.payment_method or '',
             inv.subtotal,
@@ -519,7 +532,7 @@ def admin_report_discounts():
             inv.tax_amount,
             inv.total,
             inv.register_id or '',
-            inv.created_at,
+            _eastern(inv.created_at),
         ])
         r = ws.max_row
         ws.cell(r, 2).number_format  = 'yyyy-mm-dd hh:mm'
@@ -592,11 +605,8 @@ def admin_report_returns():
     # Data rows
     for ret in returns:
         inv = ret.invoice
-        returned = ret.returned_at
-        if returned.tzinfo is None:
-            returned = returned.replace(tzinfo=timezone.utc)
         ws.append([
-            returned.astimezone(EASTERN).replace(tzinfo=None),
+            _eastern(ret.returned_at),
             inv.id,
             inv.customer_name or '',
             inv.payment_method or '',
@@ -672,7 +682,7 @@ def admin_report_sales_by_register():
 
     # Header row (row 2)
     headers = [
-        'Invoice #', 'Date / Time', 'Customer',
+        'Invoice #', 'Date / Time (ET)', 'Customer',
         'Payment Method', 'Subtotal', 'Discount', 'Tax', 'Total',
     ]
     ws.append(headers)
@@ -694,7 +704,7 @@ def admin_report_sales_by_register():
         for inv in group_invoices:
             ws.append([
                 inv.id,
-                inv.invoice_date,
+                _eastern(inv.invoice_date),
                 inv.customer_name or '',
                 inv.payment_method or '',
                 inv.subtotal,
