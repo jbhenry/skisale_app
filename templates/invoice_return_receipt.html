@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Refund Receipt - Invoice #{{ invoice.id }}</title>
+    <style>
+        @media print {
+            .no-print { display: none; }
+            @page {
+                size: 80mm auto;
+                margin: 3mm 4mm;
+            }
+        }
+
+        @media screen {
+            body { max-width: 400px; padding: 20px; }
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            width: 72mm;
+            margin: 0 auto;
+            padding: 0;
+            font-size: 10pt;
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 6px;
+            margin-bottom: 10px;
+        }
+
+        .receipt-header h1 {
+            margin: 0 0 2px 0;
+            font-size: 13pt;
+            word-break: break-word;
+        }
+
+        .receipt-header p {
+            margin: 0;
+            font-size: 9pt;
+        }
+
+        .receipt-info {
+            margin-bottom: 10px;
+        }
+
+        .receipt-info p {
+            margin: 2px 0;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+
+        .items-table th {
+            text-align: left;
+            border-bottom: 1px solid #000;
+            padding-bottom: 3px;
+        }
+
+        .items-table td {
+            padding: 4px 0;
+            border-bottom: 1px dotted #999;
+        }
+
+        .items-table .price {
+            text-align: right;
+            white-space: nowrap;
+            padding-left: 4px;
+        }
+
+        .items-table small {
+            font-size: 9pt;
+        }
+
+        .totals {
+            margin-top: 8px;
+            border-top: 2px solid #000;
+            padding-top: 6px;
+        }
+
+        .totals .row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+
+        .totals .row.total {
+            font-size: 13pt;
+            font-weight: bold;
+            margin-top: 6px;
+            padding-top: 6px;
+            border-top: 2px solid #000;
+        }
+
+        .receipt-footer {
+            text-align: center;
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 2px dashed #000;
+            font-size: 9pt;
+        }
+
+        .receipt-footer p {
+            margin: 3px 0;
+        }
+
+        .disclaimer {
+            margin-top: 14px;
+            padding-top: 10px;
+            border-top: 1px dashed #000;
+            font-size: 7pt;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .print-button {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .btn {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background-color: #0b5ed7;
+        }
+    
+        .items-table .detail {
+            font-size: 8pt;
+            color: #333;
+        }
+
+        .signature {
+            margin-top: 28px;
+            font-size: 9pt;
+        }
+
+        .signature .line {
+            border-bottom: 1px solid #000;
+            height: 24px;
+            margin-bottom: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button no-print">
+        <button class="btn" onclick="window.print()">🖨️ Print Refund Receipt</button>
+        <button class="btn" style="background:#6c757d" onclick="window.close()">Close</button>
+    </div>
+
+    <div class="receipt-header">
+        <h1>Mt. Brighton Ski Patrol Ski Swap</h1>
+        <p>Consignment Ski Sale</p>
+        <p style="margin-top: 6px; font-size: 12pt;"><strong>*** REFUND RECEIPT ***</strong></p>
+    </div>
+
+    <div class="receipt-info">
+        <p><strong>Original Invoice #:</strong> {{ invoice.id }}</p>
+        <p><strong>Sale Date:</strong> {{ (invoice.invoice_date | localtime).strftime('%Y-%m-%d %I:%M %p') }}</p>
+        {% if invoice.customer_name %}
+        <p><strong>Customer:</strong> {{ invoice.customer_name }}</p>
+        {% endif %}
+        {% if invoice.payment_method %}
+        <p><strong>Refund To:</strong> {{ invoice.payment_method }}</p>
+        {% endif %}
+    </div>
+
+    {% if invoice.returns %}
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Returned Item</th>
+                <th class="price">Refund</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in invoice.returns %}
+            <tr>
+                <td>
+                    <strong>{{ r.sku }}</strong><br>
+                    <small>{{ r.description or r.equipment_type }}</small><br>
+                    <span class="detail">
+                        Price ${{ "%.2f"|format(r.price) }}
+                        {% if r.discount %}&minus; disc ${{ "%.2f"|format(r.discount) }}{% endif %}
+                        + tax ${{ "%.2f"|format(r.tax) }}
+                        {% if r.surcharge %}+ surch ${{ "%.2f"|format(r.surcharge) }}{% endif %}
+                        <br>Returned {{ (r.returned_at | localtime).strftime('%Y-%m-%d %I:%M %p') }}
+                    </span>
+                </td>
+                <td class="price">${{ "%.2f"|format(r.refund_amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="totals">
+        <div class="row">
+            <span>Items Returned:</span>
+            <span>{{ invoice.returns|length }}</span>
+        </div>
+        <div class="row total">
+            <span>TOTAL REFUND:</span>
+            <span>${{ "%.2f"|format(refund_total) }}</span>
+        </div>
+    </div>
+
+    <div class="signature">
+        <div class="line"></div>
+        <span>Customer Signature</span>
+    </div>
+    {% else %}
+    <p style="text-align: center;">No items have been returned from this invoice.</p>
+    {% endif %}
+
+    <div class="receipt-footer">
+        <p>Thank you for supporting Mt. Brighton Ski Patrol!</p>
+        <p>Please keep this receipt for your records.</p>
+    </div>
+</body>
+</html>
