@@ -3,7 +3,7 @@ Tests for admin routes: database initialization and all close-out reports.
 """
 import io
 import pytest
-from datetime import date
+from datetime import date, datetime
 from unittest.mock import patch, MagicMock
 import openpyxl
 from models import Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn
@@ -707,3 +707,53 @@ class TestHtmlReports:
             assert f'href="{url}?format=html"'.encode() in html
             assert f'href="{url}"'.encode() in html
 
+
+class TestReportTimesAreEastern:
+    """Invoice times are stored in UTC; every report must show US Eastern."""
+
+    @pytest.fixture
+    def evening_invoice(self, db):
+        # 2026-01-15 01:30 UTC == 2026-01-14 20:30 EST
+        utc = datetime(2026, 1, 15, 1, 30)
+        inv = Invoice(customer_name='Jane Employee', tax_rate=0.06,
+                      payment_method='Cash', subtotal=100.00,
+                      discount_rate=0.10, discount_amount=10.00,
+                      tax_amount=5.40, total=95.40, register_id='Register 1',
+                      invoice_date=utc, created_at=utc)
+        db.session.add(inv)
+        db.session.flush()
+        db.session.add(InvoiceReturn(invoice_id=inv.id, sku=1, price=10.0,
+                                     refund_amount=10.6, returned_at=utc))
+        db.session.commit()
+        return inv
+
+    EXPECTED = datetime(2026, 1, 14, 20, 30)
+
+    def test_salestax_report(self, client, evening_invoice):
+        ws = parse_xlsx(client.get('/admin/report-salestax')).active
+        assert ws.cell(3, 2).value == self.EXPECTED
+
+    def test_discounts_report(self, client, evening_invoice):
+        ws = parse_xlsx(client.get('/admin/report-discounts')).active
+        assert ws.cell(3, 2).value == self.EXPECTED
+        assert ws.cell(3, 11).value == self.EXPECTED  # created at
+
+    def test_sales_by_register_report(self, client, evening_invoice):
+        ws = parse_xlsx(client.get('/admin/report-sales-by-register')).active
+        assert ws.cell(3, 2).value == self.EXPECTED
+
+    def test_returns_report(self, client, evening_invoice):
+        ws = parse_xlsx(client.get('/admin/report-returns')).active
+        assert ws.cell(3, 1).value == self.EXPECTED
+
+    def test_html_view_shows_eastern(self, client, evening_invoice):
+        html = client.get('/admin/report-salestax?format=html').data
+        assert b'2026-01-14 20:30' in html
+        assert b'2026-01-15 01:30' not in html
+
+    def test_daylight_time_offset(self, client, db, evening_invoice):
+        # July: EDT is UTC-4
+        evening_invoice.invoice_date = datetime(2026, 7, 4, 16, 0)
+        db.session.commit()
+        ws = parse_xlsx(client.get('/admin/report-salestax')).active
+        assert ws.cell(3, 2).value == datetime(2026, 7, 4, 12, 0)
