@@ -4,19 +4,20 @@ Admin routes and report helpers.
 import csv
 import io
 import os
+import re
 import sqlite3
 from datetime import date, datetime, timezone
 from itertools import groupby
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
+from openpyxl.utils import get_column_letter, column_index_from_string
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.pagesizes import letter as rl_letter
 from reportlab.lib.units import inch
 from reportlab.lib import colors as rl_colors
 
-from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file, request
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn
 from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START, EASTERN
@@ -41,6 +42,79 @@ def _xlsx_response(wb, filename):
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         headers={'Content-Disposition': f'attachment; filename="{filename}"'}
     )
+
+
+_SUM_RE = re.compile(r'^=SUM\(([A-Z]+)(\d+):([A-Z]+)(\d+)\)$')
+
+
+def _cell_display(ws, cell):
+    """Format one worksheet cell the way Excel would display it.
+
+    The reports only use literal values plus =SUM(Xn:Xm) totals, so those
+    formulas are evaluated here; anything else is shown as-is.
+    """
+    value = cell.value
+    if isinstance(value, str):
+        m = _SUM_RE.match(value)
+        if m:
+            col = column_index_from_string(m.group(1))
+            value = sum(ws.cell(r, col).value or 0
+                        for r in range(int(m.group(2)), int(m.group(4)) + 1)
+                        if isinstance(ws.cell(r, col).value, (int, float)))
+    if value is None:
+        return ''
+    fmt = cell.number_format or ''
+    if isinstance(value, datetime):
+        return value.strftime('%Y-%m-%d %H:%M')
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if '$' in fmt:
+            return f'-${abs(value):,.2f}' if value < 0 else f'${value:,.2f}'
+        if fmt.endswith('%'):
+            return f'{value * 100:.0f}%'
+    return str(value)
+
+
+def _worksheet_to_table(ws):
+    """Convert a report worksheet (row 1 title, row 2 headers, row 3+ data)
+    into a structure the report_view.html template can render."""
+    num_cols = ws.max_column
+    headers = [ws.cell(2, c).value or '' for c in range(1, num_cols + 1)]
+    body = []
+    for r in range(3, ws.max_row + 1):
+        cells = [ws.cell(r, c) for c in range(1, num_cols + 1)]
+        if all(c.value in (None, '') for c in cells):
+            continue  # spacer row
+        row_cls = ''
+        if any((c.fill.fgColor.rgb or '').endswith(_REPORT_SUBTOTAL_FILL) for c in cells
+               if c.fill and c.fill.fill_type == 'solid'):
+            row_cls = 'report-subtotal'
+        elif any(c.border.top.style for c in cells):
+            row_cls = 'report-total'
+        body.append({
+            'cls': row_cls,
+            'cells': [{
+                'text': _cell_display(ws, c),
+                'align': ('center' if c.alignment.horizontal == 'center'
+                          else 'end' if isinstance(c.value, (int, float)) or
+                          (isinstance(c.value, str) and c.value.startswith('=SUM('))
+                          else ''),
+                'bold': bool(c.font.bold),
+            } for c in cells],
+        })
+    return {'title': ws.cell(1, 1).value or ws.title, 'headers': headers, 'rows': body}
+
+
+def _report_response(wb, filename):
+    """Return the report as an on-screen HTML page when ?format=html is
+    requested, otherwise as an xlsx download. Both come from the same
+    workbook so the two views can never disagree."""
+    if request.args.get('format') == 'html':
+        table = _worksheet_to_table(wb.active)
+        return render_template('report_view.html',
+                               report=table,
+                               generated_at=datetime.now(EASTERN),
+                               xlsx_url=request.path)
+    return _xlsx_response(wb, filename)
 
 
 def _inventory_xlsx(title, status_filter, sheet_name):
@@ -266,16 +340,7 @@ def admin_payout_report():
     # Freeze header row
     ws.freeze_panes = 'A3'
 
-    # Stream to response
-    buf = io.BytesIO()
-    wb.save(buf)
-    buf.seek(0)
-    filename = f'payout_report_{date.today().isoformat()}.xlsx'
-    return Response(
-        buf.getvalue(),
-        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
-    )
+    return _report_response(wb, f'payout_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/mark-donated', methods=['POST'])
@@ -294,7 +359,7 @@ def admin_mark_donated():
 def admin_report_instock():
     """Download xlsx of all inventory items still In-Stock."""
     wb = _inventory_xlsx('In-Stock Inventory', 'In-Stock', 'In-Stock Items')
-    return _xlsx_response(wb, f'instock_report_{date.today().isoformat()}.xlsx')
+    return _report_response(wb, f'instock_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/export-inventory-csv')
@@ -324,7 +389,7 @@ def admin_export_inventory_csv():
 def admin_report_donated():
     """Download xlsx of all inventory items marked Donated."""
     wb = _inventory_xlsx('Donated Items', 'Donated', 'Donated Items')
-    return _xlsx_response(wb, f'donated_report_{date.today().isoformat()}.xlsx')
+    return _report_response(wb, f'donated_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/report-salestax')
@@ -399,7 +464,7 @@ def admin_report_salestax():
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = 'A3'
 
-    return _xlsx_response(wb, f'salestax_report_{date.today().isoformat()}.xlsx')
+    return _report_response(wb, f'salestax_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/report-discounts')
@@ -483,7 +548,7 @@ def admin_report_discounts():
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = 'A3'
 
-    return _xlsx_response(wb, f'discounts_report_{date.today().isoformat()}.xlsx')
+    return _report_response(wb, f'discounts_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/report-returns')
@@ -576,7 +641,7 @@ def admin_report_returns():
     ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.print_title_rows = '2:2'
 
-    return _xlsx_response(wb, f'returns_report_{date.today().isoformat()}.xlsx')
+    return _report_response(wb, f'returns_report_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/report-sales-by-register')
@@ -681,7 +746,7 @@ def admin_report_sales_by_register():
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = 'A3'
 
-    return _xlsx_response(wb, f'sales_by_register_{date.today().isoformat()}.xlsx')
+    return _report_response(wb, f'sales_by_register_{date.today().isoformat()}.xlsx')
 
 
 @admin_bp.route('/admin/backup-db', methods=['POST'])

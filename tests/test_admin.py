@@ -607,3 +607,103 @@ class TestReturnsReport:
     def test_link_present_on_admin_page(self, client):
         response = client.get('/admin')
         assert b'Returns Report' in response.data
+
+
+# ---------------------------------------------------------------------------
+# On-screen HTML versions of the xlsx reports  (?format=html)
+# ---------------------------------------------------------------------------
+
+REPORT_URLS = [
+    '/admin/report-instock',
+    '/admin/report-donated',
+    '/admin/report-salestax',
+    '/admin/report-sales-by-register',
+    '/admin/report-discounts',
+    '/admin/report-returns',
+    '/admin/payout-report',
+]
+
+
+class TestHtmlReports:
+    @pytest.fixture
+    def sale(self, db):
+        """One vendor, one sold item on a discounted card invoice, one in-stock
+        item, one donated item, and one return."""
+        vendor = Vendor(first_name='Alice', last_name='Vendor', commission_rate=0.2)
+        db.session.add(vendor)
+        db.session.flush()
+        sold = Inventory(sku=1001, vendor_id=vendor.id, equipment_type='Skis',
+                         description='Rossignol Skis', price=200.00, status='Sold')
+        instock = Inventory(sku=1002, vendor_id=vendor.id, equipment_type='Boots',
+                            description='Salomon Boots', price=80.00, status='In-Stock')
+        donated = Inventory(sku=1003, vendor_id=vendor.id, equipment_type='Poles',
+                            description='Old Poles', price=10.00, status='Donated')
+        db.session.add_all([sold, instock, donated])
+        db.session.flush()
+        inv = Invoice(customer_name='Jane Employee', tax_rate=0.06, discount_rate=0.10,
+                      payment_method='Credit Card', register_id='Register 1')
+        db.session.add(inv)
+        db.session.flush()
+        db.session.add(InvoiceLine(invoice_id=inv.id, inventory_id=sold.id, price=200.00))
+        db.session.flush()
+        inv.calculate_totals()
+        db.session.add(InvoiceReturn(invoice_id=inv.id, sku=999, description='Returned Helmet',
+                                     price=50.00, discount=5.00, tax=2.70, surcharge=1.35,
+                                     refund_amount=49.05))
+        db.session.commit()
+        return inv
+
+    @pytest.mark.parametrize('url', REPORT_URLS)
+    def test_html_view_renders(self, client, sale, url):
+        response = client.get(f'{url}?format=html')
+        assert response.status_code == 200
+        assert response.content_type.startswith('text/html')
+        assert b'<table' in response.data
+        # Links back to the xlsx download of the same report
+        assert f'href="{url}"'.encode() in response.data
+
+    @pytest.mark.parametrize('url', REPORT_URLS)
+    def test_html_view_empty_db(self, client, db, url):
+        response = client.get(f'{url}?format=html')
+        assert response.status_code == 200
+        assert b'No data for this report yet' in response.data
+
+    @pytest.mark.parametrize('url', REPORT_URLS)
+    def test_xlsx_still_default(self, client, sale, url):
+        response = client.get(url)
+        assert response.content_type == XLSX_MIME
+
+    def test_html_title_matches_xlsx(self, client, sale):
+        response = client.get('/admin/report-returns?format=html')
+        assert b'Returns Report' in response.data
+
+    def test_html_formats_money_and_evaluates_totals(self, client, sale):
+        html = client.get('/admin/report-instock?format=html').data
+        assert b'Salomon Boots' in html
+        assert b'$80.00' in html
+        assert b'=SUM' not in html
+
+    def test_html_payout_values(self, client, sale):
+        html = client.get('/admin/payout-report?format=html').data
+        # 200 sold, 20% commission -> 40 withheld, 160 payout
+        assert b'Alice Vendor' in html
+        assert b'20%' in html
+        assert b'$40.00' in html
+        assert b'$160.00' in html
+
+    def test_html_sales_by_register_subtotal_row(self, client, sale):
+        html = client.get('/admin/report-sales-by-register?format=html').data
+        assert b'report-subtotal' in html
+        assert b'GRAND TOTAL:' in html
+
+    def test_html_totals_row_marked(self, client, sale):
+        html = client.get('/admin/report-returns?format=html').data
+        assert b'report-total' in html
+        assert b'$49.05' in html
+
+    def test_admin_page_has_view_and_xlsx_links(self, client):
+        html = client.get('/admin').data
+        for url in REPORT_URLS:
+            assert f'href="{url}?format=html"'.encode() in html
+            assert f'href="{url}"'.encode() in html
+
