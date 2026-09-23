@@ -134,7 +134,9 @@ class Invoice(db.Model):
     
     # Relationship to invoice lines
     lines = db.relationship('InvoiceLine', backref='invoice', lazy=True, cascade='all, delete-orphan')
-    
+    returns = db.relationship('InvoiceReturn', backref='invoice', lazy=True,
+                              cascade='all, delete-orphan', order_by='InvoiceReturn.id')
+
     def __repr__(self):
         return f'<Invoice #{self.id} - ${self.total}>'
     
@@ -228,3 +230,48 @@ class InvoiceLine(db.Model):
             'price': self.price
         }
 
+
+
+class InvoiceReturn(db.Model):
+    """A line item returned from a completed invoice.
+
+    Returning an item deletes its InvoiceLine, so this keeps a snapshot of
+    the item and the refund breakdown for the customer's refund receipt.
+    Item fields are copied rather than linked because inventory is
+    hard-deleted.
+    """
+    __tablename__ = 'invoice_returns'
+
+    id = db.Column(db.Integer, primary_key=True)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('invoices.id'), nullable=False)
+    returned_at = db.Column(db.DateTime, default=utcnow, nullable=False)
+    register_id = db.Column(db.String(50))
+    sku = db.Column(db.Integer)
+    description = db.Column(db.String(200))
+    equipment_type = db.Column(db.String(50))
+    price = db.Column(db.Float, nullable=False)
+    discount = db.Column(db.Float, nullable=False, default=0.0)
+    tax = db.Column(db.Float, nullable=False, default=0.0)
+    surcharge = db.Column(db.Float, nullable=False, default=0.0)
+    refund_amount = db.Column(db.Float, nullable=False)
+
+    def __repr__(self):
+        return f'<InvoiceReturn Invoice:{self.invoice_id} SKU:{self.sku} ${self.refund_amount}>'
+
+    @classmethod
+    def from_line(cls, line, register_id=None):
+        """Snapshot an invoice line and its refund before the line is removed."""
+        item = line.inventory_item
+        refund = line.refund_breakdown
+        return cls(
+            invoice_id=line.invoice_id,
+            register_id=register_id,
+            sku=item.sku,
+            description=item.description,
+            equipment_type=item.equipment_type,
+            price=refund['price'],
+            discount=refund['discount'],
+            tax=refund['tax'],
+            surcharge=refund['surcharge'],
+            refund_amount=refund['total'],
+        )

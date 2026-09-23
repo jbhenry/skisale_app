@@ -2,7 +2,7 @@
 Tests for invoice routes and business logic.
 """
 import pytest
-from models import Invoice, Inventory, InvoiceLine
+from models import Invoice, Inventory, InvoiceLine, InvoiceReturn
 from routes.invoices import release_abandoned_invoices
 
 
@@ -953,3 +953,67 @@ class TestInvoiceReturnRefund:
         response = client.get(f'/invoices/{sample_invoice.id}?returns=1')
         assert b'Refund' in response.data
         assert b'163.50' in response.data
+
+
+class TestInvoiceReturnReceipt:
+    """Returning an item deletes its invoice line, so the refund is recorded
+    as an InvoiceReturn that the printable refund receipt is built from."""
+
+    def _sell_and_return(self, client, db, item, invoice, payment_method='Credit Card'):
+        client.post(f'/invoices/{invoice.id}/edit', data={'action': 'add_item', 'sku': item.sku})
+        client.post(f'/invoices/{invoice.id}/edit', data={
+            'action': 'complete',
+            'customer_name': 'Bob Smith',
+            'tax_rate': '6',
+            'discount_rate': '10',
+            'payment_method': payment_method,
+        })
+        db.session.refresh(invoice)
+        line = invoice.lines[0]
+        client.post(f'/invoices/{invoice.id}/return_item', data={'line_id': line.id})
+        db.session.expire_all()
+
+    def test_return_records_refund_snapshot(self, client, db, sample_item, sample_invoice):
+        self._sell_and_return(client, db, sample_item, sample_invoice)
+        returns = InvoiceReturn.query.filter_by(invoice_id=sample_invoice.id).all()
+        assert len(returns) == 1
+        r = returns[0]
+        assert r.sku == sample_item.sku
+        assert r.description == sample_item.description
+        assert r.price == 150.00
+        assert r.discount == 15.00
+        assert r.tax == 8.10
+        assert r.surcharge == 4.05
+        assert r.refund_amount == 147.15
+        assert r.register_id is not None
+
+    def test_return_receipt_shows_refund(self, client, db, sample_item, sample_invoice):
+        self._sell_and_return(client, db, sample_item, sample_invoice)
+        response = client.get(f'/invoices/{sample_invoice.id}/return_receipt')
+        assert response.status_code == 200
+        assert b'REFUND RECEIPT' in response.data
+        assert str(sample_item.sku).encode() in response.data
+        assert b'147.15' in response.data
+        assert b'Credit Card' in response.data
+        assert b'Bob Smith' in response.data
+
+    def test_return_receipt_with_no_returns(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/return_receipt')
+        assert response.status_code == 200
+        assert b'No items have been returned' in response.data
+
+    def test_return_receipt_nonexistent_invoice_404(self, client):
+        assert client.get('/invoices/99999/return_receipt').status_code == 404
+
+    def test_invoice_view_links_to_return_receipt(self, client, db, sample_item, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}')
+        assert b'Print Refund Receipt' not in response.data
+        self._sell_and_return(client, db, sample_item, sample_invoice)
+        response = client.get(f'/invoices/{sample_invoice.id}')
+        assert b'Print Refund Receipt' in response.data
+        assert b'Returned Items (1)' in response.data
+
+    def test_deleting_invoice_deletes_returns(self, client, db, sample_item, sample_invoice):
+        self._sell_and_return(client, db, sample_item, sample_invoice)
+        client.post(f'/invoices/{sample_invoice.id}/delete')
+        assert InvoiceReturn.query.count() == 0
