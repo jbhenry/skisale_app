@@ -124,69 +124,111 @@
                         </div>
                         <i class="bi bi-check2-circle ms-auto text-muted"></i>
                     </button>
-                    <a href="{{ url_for('admin.admin_report_instock') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-warning"></i>
                         <div>
                             <strong>Remaining Inventory Report</strong>
-                            <div class="text-muted small">Download an .xlsx list of all items still In-Stock — for return to vendors or disposition.</div>
+                            <div class="text-muted small">A list of all items still In-Stock — for return to vendors or disposition.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin.admin_report_donated') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_report_instock', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_report_instock') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-info"></i>
                         <div>
                             <strong>Donated Items Report</strong>
-                            <div class="text-muted small">Download an .xlsx list of all items marked as Donated.</div>
+                            <div class="text-muted small">A list of all items marked as Donated.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin.admin_report_salestax') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_report_donated', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_report_donated') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-secondary"></i>
                         <div>
                             <strong>Sales Tax Report</strong>
-                            <div class="text-muted small">Download an .xlsx list of sales tax collected — one line per invoice with totals.</div>
+                            <div class="text-muted small">A list of sales tax collected — one line per invoice with totals.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin.admin_report_sales_by_register') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_report_salestax', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_report_salestax') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-receipt fs-4 text-primary"></i>
                         <div>
                             <strong>Sales by Register Report</strong>
-                            <div class="text-muted small">Download an .xlsx list of all invoices grouped by register ID, with per-register subtotals and a grand total.</div>
+                            <div class="text-muted small">A list of all invoices grouped by register ID, with per-register subtotals and a grand total.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin.admin_report_discounts') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_report_sales_by_register', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_report_sales_by_register') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-tag fs-4 text-danger"></i>
                         <div>
                             <strong>Employee Discounts Report</strong>
-                            <div class="text-muted small">Download an .xlsx list of every invoice with an employee discount applied — includes customer name, totals, and register/user info.</div>
+                            <div class="text-muted small">A list of every invoice with an employee discount applied — includes customer name, totals, and register/user info.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin.admin_report_returns') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_report_discounts', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_report_discounts') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-arrow-return-left fs-4 text-warning"></i>
                         <div>
                             <strong>Returns Report</strong>
-                            <div class="text-muted small">Download an .xlsx list of every item returned from an invoice — return date, customer, SKU, refund breakdown (price, discount, tax, surcharge), and register/user info.</div>
+                            <div class="text-muted small">A list of every item returned from an invoice — return date, customer, SKU, refund breakdown (price, discount, tax, surcharge), and register/user info.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
-                    <a href="{{ url_for('admin.admin_payout_report') }}"
-                       class="list-group-item list-group-item-action d-flex align-items-center gap-3">
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_report_returns', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_report_returns') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-spreadsheet fs-4 text-success"></i>
                         <div>
                             <strong>Payout Report</strong>
-                            <div class="text-muted small">Download an .xlsx spreadsheet listing every vendor check to be written — items consigned, items sold, commission withheld, and net payout.</div>
+                            <div class="text-muted small">A list of every vendor check to be written — items consigned, items sold, commission withheld, and net payout.</div>
                         </div>
-                        <i class="bi bi-download ms-auto text-muted"></i>
-                    </a>
+                        <div class="ms-auto d-flex gap-2 flex-shrink-0">
+                            <a href="{{ url_for('admin.admin_payout_report', format='html') }}" class="btn btn-sm btn-outline-primary" title="View on screen">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                            <a href="{{ url_for('admin.admin_payout_report') }}" class="btn btn-sm btn-outline-success" title="Download .xlsx">
+                                <i class="bi bi-download"></i> .xlsx
+                            </a>
+                        </div>
+                    </div>
                     <a href="{{ url_for('admin.admin_print_checks') }}"
                        class="list-group-item list-group-item-action d-flex align-items-center gap-3">
                         <i class="bi bi-file-earmark-pdf fs-4 text-danger"></i>
