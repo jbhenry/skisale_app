@@ -23,7 +23,7 @@ When the form is completed, and the items labeled, the vendor proceeds to one of
 
 A small number of vendors come with spreadsheet containing all of their items on a flash drive. We can import this spreadsheet into our database to save typing. 
 
-We charge a commission of 23% for all vendors, except patrollers who are charged a discounted rate of 15%.
+We charge a commission of 20% for all vendors, except patrollers who are charged a discounted rate of 15%.
 
 ## Sales
 

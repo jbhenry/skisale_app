@@ -135,7 +135,7 @@
                                 {% for pct, label in commission_rates %}
                                 <option value="{{ pct }}"
                                     {% if vendor and (vendor.commission_rate * 100)|int == pct %}selected
-                                    {% elif not vendor and pct == 23 %}selected
+                                    {% elif not vendor and pct == default_commission_pct %}selected
                                     {% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>

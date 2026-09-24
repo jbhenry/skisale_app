@@ -57,14 +57,14 @@ SURCHARGE_METHODS = {'Credit Card', 'Venmo'}
 # Employee discount rate applied when an employee discount is selected
 EMPLOYEE_DISCOUNT_RATE = 0.10  # 10%
 
-# Default commission rate for new vendors (must match the form default in COMMISSION_RATES)
-DEFAULT_VENDOR_COMMISSION_RATE = 0.23  # 23% — General Public
+# Default commission rate for new vendors (must be one of the COMMISSION_RATES; the vendor form preselects it)
+DEFAULT_VENDOR_COMMISSION_RATE = 0.20  # 20% — General Public
 
 # Available vendor commission rates: (integer_pct, display_label)
-# The first entry is the default for new vendors.
+# DEFAULT_VENDOR_COMMISSION_RATE above picks which entry new vendors start on.
 COMMISSION_RATES = [
     (15,  '15% — Employees/Patrollers'),
-    (23,  '23% — General Public'),
+    (20,  '20% — General Public'),
 ]
 # Removed this one from COMMISSION_RATES due to it causing confusion. Only one vendor will have this rate,
 # and can be set manually.
@@ -86,7 +86,7 @@ The purchaser of these items is advised and urged to have any bindings checked a
 # Disclaimer text printed on the vendor check-in receipt
 VENDOR_CHECKIN_DISCLAIMER = """This WINTER SPORTS EQUIPMENT SALE is run by the Mt. Brighton Ski Patrol (hereafter referred to as the MBSP) as an independent fund raising function at Mt. Brighton Ski Area. The MBSP does not assume any responsibility for the WINTER SPORTS EQUIPMENT SALE. All ski and snowboard equipment is subject to our approval prior to acceptance to the sale. We reserve the right to reject any or all equipment for any reason.
 
-CHARGES: Estimated payout is based on items currently In-Stock. Final payout calculated after items sell. If the item sells, we will deduct a 23% commission charge calculated on the selling price and the remainder will be paid by check. Check for sold items on www.mtbrightonskipatrol.com starting Saturday afternoon.
+CHARGES: Estimated payout is based on items currently In-Stock. Final payout calculated after items sell. If the item sells, we will deduct a 20% commission charge calculated on the selling price and the remainder will be paid by check. Check for sold items on www.mtbrightonskipatrol.com starting Saturday afternoon.
 
 PICK-UP OF UNSOLD MERCHANDISE: Unsold merchandise must be picked up at Mt. Brighton on the Sunday of the sale weekend, No later than 5:00pm. We do not have ANY provisions for storage of leftover merchandise and will be considered donated if not picked up by 5:00pm on Sunday of the sale weekend. Unclaimed items will be considered donated and will be disposed of at our discretion.
 Beginning Saturday afternoon, we will be posting the status of sold items on our website at www.mtbrightonskipatrol.com. You can check there to see if your items have sold. Status will be updated periodically Saturday afternoon and Sunday.

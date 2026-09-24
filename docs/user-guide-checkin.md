@@ -32,7 +32,7 @@ If the vendor is found, you can click on the "Reactivate" button under the Actio
 If the vendor is not found, or has not sold at prior swaps, you will need to add them as a new vendor. Click the New vendor button at the top of the Vendors screen to open the New Vendor screen. 
 ![New Vendor](images/new-vendor.png)
 Enter the vendor's name, address and phone number. Email address is optional. Make sure the mailing address is accurate, because checks will be mailed out to vendors. 
-Under Consignment Details, leave the Commission Rate at 23% for most people. The exception will be patrollers who will get the lower rate of 15%. Leave the Payment Method at Check. This is the only method we support for now.
+Under Consignment Details, leave the Commission Rate at 20% for most people. The exception will be patrollers who will get the lower rate of 15%. Leave the Payment Method at Check. This is the only method we support for now.
 
 When all data has been entered, click the Create Vendor button at the bottom of the page. When the vendor is created, you will see the Vendor Detail page. 
 ![Vendor Detail](images/vendor-detail.png)

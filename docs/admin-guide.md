@@ -112,10 +112,10 @@ Available commission rate tiers are defined as `COMMISSION_RATES` in `constants.
 ```python
 COMMISSION_RATES = [
     (15,  '15% — Employees'),
-    (23,  '23% — General Public'),
+    (20,  '20% — General Public'),
     (100, '100% — MBSP Only'),
 ]
 ```
 
 Each entry is `(integer_pct, display_label)`. The vendor form dropdown is populated from
-this list. New vendors default to 23% (General Public).
+this list. New vendors default to 20% (General Public).
