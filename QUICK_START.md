@@ -93,7 +93,7 @@ waitress-serve --host=0.0.0.0 --port=5000 app:app
 Consignors → New Consignor. The Vendor ID is assigned automatically.
 
 **How do I change a commission rate?**
-Edit the consignor record. Each consignor has their own rate (default 23% — General Public).
+Edit the consignor record. Each consignor has their own rate (default 20% — General Public).
 
 **An item was scanned into the wrong invoice — how do I fix it?**
 Open the invoice, remove the item (it returns to In-Stock), then add it to the correct invoice.

@@ -182,6 +182,7 @@ def vendor_new():
 
     return render_template('vendor_form.html', vendor=None, action='New',
                            commission_rates=COMMISSION_RATES,
+                           default_commission_pct=round(DEFAULT_VENDOR_COMMISSION_RATE * 100),
                            vendor_payment_methods=VENDOR_PAYMENT_METHODS)
 
 
@@ -197,6 +198,7 @@ def vendor_edit(vendor_id):
                 flash(f'Cannot deactivate vendor "{vendor.full_name}" — they still have inventory items.', 'error')
                 return render_template('vendor_form.html', vendor=vendor, action='Edit',
                                        commission_rates=COMMISSION_RATES,
+                                       default_commission_pct=round(DEFAULT_VENDOR_COMMISSION_RATE * 100),
                                        vendor_payment_methods=VENDOR_PAYMENT_METHODS)
 
             vendor.first_name = request.form['first_name'].strip()
@@ -225,6 +227,7 @@ def vendor_edit(vendor_id):
 
     return render_template('vendor_form.html', vendor=vendor, action='Edit',
                            commission_rates=COMMISSION_RATES,
+                           default_commission_pct=round(DEFAULT_VENDOR_COMMISSION_RATE * 100),
                            vendor_payment_methods=VENDOR_PAYMENT_METHODS)
 
 

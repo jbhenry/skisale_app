@@ -13,7 +13,7 @@ Represents a person consigning items for sale.
 | `id` | Integer PK | Stable across events; reuse by reactivating |
 | `first_name`, `last_name` | String | Combined as `full_name` property |
 | `email`, `phone` | String | Optional contact info |
-| `commission_rate` | Float | Default `0.23` (org keeps 23%, vendor gets 77%) |
+| `commission_rate` | Float | Default `0.20` (org keeps 20%, vendor gets 80%) |
 | `payment_method` | String | Preferred payout method (Cash, Check, PayPal, Venmo, Zelle, Bank Transfer) |
 | `active` | Boolean | Soft delete; inactive vendors hidden by default |
 | `created_by`, `updated_by` | String | Register ID of the session that created/last updated the record |

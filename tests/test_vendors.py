@@ -702,3 +702,23 @@ class TestCheckFeeOnVendorPages:
 
     def test_dashboard_hides_check_fees_without_sales(self, client, db):
         assert b'Check Fees' not in client.get('/').data
+
+
+class TestCommissionRateDefault:
+    def test_default_is_one_of_the_offered_rates(self):
+        from constants import COMMISSION_RATES, DEFAULT_VENDOR_COMMISSION_RATE
+        assert round(DEFAULT_VENDOR_COMMISSION_RATE * 100) in [pct for pct, _ in COMMISSION_RATES]
+
+    def test_new_vendor_form_preselects_20_percent(self, client):
+        html = client.get('/vendors/new').data.decode()
+        assert '<option value="20"\n' in html or '<option value="20"' in html
+        selected = html.split('<option value="20"', 1)[1].split('>', 1)[0]
+        assert 'selected' in selected
+
+    def test_edit_form_preselects_vendors_rate(self, client, sample_vendor):
+        # sample_vendor is at 20%; editing must not fall back to the first option (15%)
+        html = client.get(f'/vendors/{sample_vendor.id}/edit').data.decode()
+        selected = html.split('<option value="20"', 1)[1].split('>', 1)[0]
+        assert 'selected' in selected
+        not_selected = html.split('<option value="15"', 1)[1].split('>', 1)[0]
+        assert 'selected' not in not_selected

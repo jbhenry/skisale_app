@@ -17,7 +17,7 @@ from pre-event setup through vendor payouts.
 
 - Add vendors via **Vendors → New Vendor**
 - Assign each vendor a unique ID (auto-incremented)
-- Set the commission rate (default: 23% — General Public)
+- Set the commission rate (default: 20% — General Public)
 - Print or distribute SKU ranges to vendors so they can tag their items
 
 ---

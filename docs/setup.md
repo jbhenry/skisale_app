@@ -76,7 +76,7 @@ Key constants are defined in `constants.py`:
 |----------|---------|-------------|
 | `DEFAULT_TAX_RATE` | `0.06` (6%) | Sales tax rate applied to all new invoices |
 | `EMPLOYEE_DISCOUNT_RATE` | `0.10` (10%) | Discount rate for the employee/volunteer discount |
-| `COMMISSION_RATES` | 15%, 23%, 100% | Available vendor commission tiers with labels |
+| `COMMISSION_RATES` | 15%, 20% | Available vendor commission tiers with labels |
 | `VENDOR_PAYMENT_METHODS` | Check, Cash, … | Vendor payout method options |
 | `PAYMENT_METHODS` | Credit Card, Cash, … | Customer payment method options |
 
