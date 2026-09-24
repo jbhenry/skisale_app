@@ -7,7 +7,7 @@ from datetime import datetime
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
-from models import db, Vendor, Inventory, Invoice, InvoiceLine
+from models import db, Vendor, Inventory, Invoice, InvoiceLine, check_fee
 from constants import EQUIPMENT_TYPES, INVENTORY_STATUSES, PAYMENT_METHODS, EASTERN, COMMISSION_RATES, VENDOR_PAYMENT_METHODS, DEFAULT_VENDOR_COMMISSION_RATE, SKU_MIN, SKU_MAX, VENDOR_CHECKIN_DISCLAIMER
 
 vendors_bp = Blueprint('vendors', __name__)
@@ -44,8 +44,8 @@ def compute_swap_metrics():
 
     # Calculate vendor payouts and commissions from INVOICE LINES (not just sold items)
     # This ensures we only count items that were actually sold through invoices
-    total_vendor_payout = 0
     total_commission = 0
+    vendor_payouts = {}  # vendor_id -> payout before the check fee
 
     # Go through all invoice lines to calculate payouts
     for invoice in all_invoices:
@@ -56,7 +56,11 @@ def compute_swap_metrics():
             commission = item_price * vendor.commission_rate
             payout = item_price - commission
             total_commission += commission
-            total_vendor_payout += payout
+            vendor_payouts[vendor.id] = vendor_payouts.get(vendor.id, 0.0) + payout
+
+    # The check fee is charged once per vendor check, so apply it per vendor
+    total_check_fees = sum(check_fee(p) for p in vendor_payouts.values())
+    total_vendor_payout = sum(vendor_payouts.values()) - total_check_fees
 
     # Payment method breakdown
     payment_breakdown = {}
@@ -81,6 +85,7 @@ def compute_swap_metrics():
         total_surcharge=total_surcharge,
         total_vendor_payout=total_vendor_payout,
         total_commission=total_commission,
+        total_check_fees=total_check_fees,
         num_invoices=len(all_invoices),
         payment_breakdown=payment_breakdown,
     )
@@ -280,7 +285,7 @@ def vendor_reactivate(vendor_id):
 def vendor_view(vendor_id):
     """View vendor details"""
     vendor = db.get_or_404(Vendor, vendor_id)
-    return render_template('vendor_view.html', vendor=vendor)
+    return render_template('vendor_view.html', vendor=vendor, check_fee=check_fee)
 
 
 @vendors_bp.route('/vendors/<int:vendor_id>/receipt')
@@ -308,11 +313,13 @@ def vendor_checkout_receipt(vendor_id):
     sold_items = [i for i in items if i.status == 'Sold']
     total_sales = sum(i.price for i in sold_items)
     commission_amt = total_sales * vendor.commission_rate
-    payout_amt = total_sales - commission_amt
+    check_fee_amt = check_fee(total_sales - commission_amt)
+    payout_amt = total_sales - commission_amt - check_fee_amt
     return render_template('vendor_checkout_receipt.html', vendor=vendor,
                            items=items, sold_items=sold_items,
                            total_sales=total_sales,
                            commission_amt=commission_amt,
+                           check_fee_amt=check_fee_amt,
                            payout_amt=payout_amt,
                            now=datetime.now(EASTERN))
 

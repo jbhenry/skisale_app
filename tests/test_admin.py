@@ -7,6 +7,9 @@ from datetime import date, datetime
 from unittest.mock import patch, MagicMock
 import openpyxl
 from models import Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn
+from constants import CHECK_FEE
+from routes.admin import _check_payees
+from models import check_fee
 
 XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 
@@ -165,12 +168,28 @@ class TestPayoutReport:
         assert ws.cell(4, 9).value == pytest.approx(200.00)  # vendor2
 
     def test_correct_payout_calculation(self, client, full_db):
-        # vendor1: $100 * (1 - 0.20) = $80
-        # vendor2: $200 * (1 - 0.30) = $140
+        # vendor1: $100 * (1 - 0.20) - $1 check fee = $79
+        # vendor2: $200 * (1 - 0.30) - $1 check fee = $139
         wb = parse_xlsx(client.get('/admin/payout-report'))
         ws = wb.active
-        assert ws.cell(3, 12).value == pytest.approx(80.00)
-        assert ws.cell(4, 12).value == pytest.approx(140.00)
+        assert ws.cell(3, 13).value == pytest.approx(79.00)
+        assert ws.cell(4, 13).value == pytest.approx(139.00)
+
+    def test_check_fee_column(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/payout-report'))
+        ws = wb.active
+        assert ws.cell(2, 12).value == 'Check Fee'
+        assert ws.cell(2, 13).value == 'Total Payout'
+        assert ws.cell(3, 12).value == pytest.approx(CHECK_FEE)
+        assert ws.cell(4, 12).value == pytest.approx(CHECK_FEE)
+
+    def test_check_fee_totaled(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/payout-report'))
+        ws = wb.active
+        fee_col = [ws.cell(r, 12).value for r in range(5, ws.max_row + 1)]
+        assert '=SUM(L3:L4)' in fee_col
+        payout_col = [ws.cell(r, 13).value for r in range(5, ws.max_row + 1)]
+        assert '=SUM(M3:M4)' in payout_col
 
     def test_empty_db_returns_200(self, client, db):
         response = client.get('/admin/payout-report')
@@ -307,6 +326,48 @@ class TestPrintChecks:
         response = client.get('/admin/print-checks')
         assert response.status_code == 200
         assert response.data[:4] == b'%PDF'
+
+
+class TestCheckFee:
+    """Each vendor check has the check processing/mailing fee deducted."""
+
+    def test_check_amount_deducts_fee(self, app, full_db):
+        with app.test_request_context():
+            payees = {p['vendor_id']: p for p in _check_payees()}
+        # vendor1: $100 - 20% = $80, minus fee
+        p1 = payees[full_db['v1'].id]
+        assert p1['check_fee'] == pytest.approx(CHECK_FEE)
+        assert p1['amount'] == pytest.approx(80.00 - CHECK_FEE)
+        # vendor2: $200 - 30% = $140, minus fee
+        p2 = payees[full_db['v2'].id]
+        assert p2['amount'] == pytest.approx(140.00 - CHECK_FEE)
+
+    def test_checks_match_payout_report(self, client, app, full_db):
+        with app.test_request_context():
+            amounts = sorted(p['amount'] for p in _check_payees())
+        ws = parse_xlsx(client.get('/admin/payout-report')).active
+        report = sorted(ws.cell(r, 13).value for r in (3, 4))
+        assert amounts == pytest.approx(report)
+
+    def test_fee_capped_at_payout(self):
+        assert check_fee(0.50) == pytest.approx(0.50)
+        assert check_fee(0.0) == 0.0
+        assert check_fee(25.0) == pytest.approx(CHECK_FEE)
+
+    def test_no_check_when_payout_not_more_than_fee(self, app, db, sample_vendor):
+        # $1 item at 0% commission -> $1 payout -> $0 after fee -> no check
+        sample_vendor.commission_rate = 0.0
+        item = Inventory(sku=5555, vendor_id=sample_vendor.id, equipment_type='Other',
+                         description='Stickers', price=CHECK_FEE, status='Sold')
+        db.session.add(item)
+        db.session.flush()
+        inv = Invoice(tax_rate=0.0)
+        db.session.add(inv)
+        db.session.flush()
+        db.session.add(InvoiceLine(invoice_id=inv.id, inventory_id=item.id, price=CHECK_FEE))
+        db.session.commit()
+        with app.test_request_context():
+            assert _check_payees() == []
 
 
 # ---------------------------------------------------------------------------
@@ -685,11 +746,12 @@ class TestHtmlReports:
 
     def test_html_payout_values(self, client, sale):
         html = client.get('/admin/payout-report?format=html').data
-        # 200 sold, 20% commission -> 40 withheld, 160 payout
+        # 200 sold, 20% commission -> 40 withheld, $1 check fee, 159 payout
         assert b'Alice Vendor' in html
         assert b'20%' in html
         assert b'$40.00' in html
-        assert b'$160.00' in html
+        assert b'$1.00' in html
+        assert b'$159.00' in html
 
     def test_html_sales_by_register_subtotal_row(self, client, sale):
         html = client.get('/admin/report-sales-by-register?format=html').data

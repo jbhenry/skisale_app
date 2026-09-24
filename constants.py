@@ -99,3 +99,4 @@ ORG_NAME  = 'Mt. Brighton Ski Patrol Ski Swap'
 ORG_ADDR1 = '4141 Bauer Road'
 ORG_ADDR2 = 'Brighton, MI 48116'
 CHECK_NUMBER_START = 1001  # First check number in the run
+CHECK_FEE = 1.00  # Check processing/mailing fee deducted from each vendor check
