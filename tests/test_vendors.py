@@ -722,3 +722,48 @@ class TestCommissionRateDefault:
         assert 'selected' in selected
         not_selected = html.split('<option value="15"', 1)[1].split('>', 1)[0]
         assert 'selected' not in not_selected
+
+
+class TestNonStandardCommissionRate:
+    """A rate set manually outside COMMISSION_RATES (the MBSP vendor at 100%)
+    must survive editing the vendor."""
+
+    @pytest.fixture
+    def mbsp_vendor(self, db):
+        vendor = Vendor(first_name='MBSP', last_name='Only', commission_rate=1.0,
+                        payment_method='Check', active=True)
+        db.session.add(vendor)
+        db.session.commit()
+        return vendor
+
+    def _selected_option(self, html):
+        select = html.split('id="commission_rate"', 1)[1].split('</select>', 1)[0]
+        for opt in select.split('<option')[1:]:
+            tag = opt.split('>', 1)[0]
+            if 'selected' in tag:
+                return tag.split('value="', 1)[1].split('"', 1)[0]
+        return None
+
+    def test_edit_form_keeps_current_rate_selected(self, client, mbsp_vendor):
+        html = client.get(f'/vendors/{mbsp_vendor.id}/edit').data.decode()
+        assert self._selected_option(html) == '100'
+        assert '100% — current rate (not a standard option)' in html
+
+    def test_saving_form_keeps_100_percent(self, client, db, mbsp_vendor):
+        html = client.get(f'/vendors/{mbsp_vendor.id}/edit').data.decode()
+        client.post(f'/vendors/{mbsp_vendor.id}/edit', data={
+            'first_name': 'MBSP', 'last_name': 'Only',
+            'commission_rate': self._selected_option(html),
+            'payment_method': 'Check', 'active': 'on',
+        })
+        db.session.refresh(mbsp_vendor)
+        assert mbsp_vendor.commission_rate == pytest.approx(1.0)
+
+    def test_standard_rate_has_no_extra_option(self, client, sample_vendor):
+        html = client.get(f'/vendors/{sample_vendor.id}/edit').data.decode()
+        assert 'not a standard option' not in html
+        assert self._selected_option(html) == '20'
+
+    def test_new_vendor_has_no_extra_option(self, client):
+        html = client.get('/vendors/new').data.decode()
+        assert 'not a standard option' not in html

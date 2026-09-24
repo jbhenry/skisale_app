@@ -131,13 +131,19 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label for="commission_rate" class="form-label">Commission Rate (%)</label>
+                            {% set current_pct = (vendor.commission_rate * 100)|round(4) if vendor and vendor.commission_rate is not none else none %}
                             <select class="form-select" id="commission_rate" name="commission_rate">
                                 {% for pct, label in commission_rates %}
                                 <option value="{{ pct }}"
-                                    {% if vendor and (vendor.commission_rate * 100)|int == pct %}selected
+                                    {% if current_pct is not none and current_pct == pct %}selected
                                     {% elif not vendor and pct == default_commission_pct %}selected
                                     {% endif %}>{{ label }}</option>
                                 {% endfor %}
+                                {# Keep a manually-set rate (e.g. 100% for MBSP) that isn't a standard
+                                   option, so saving the form doesn't silently change it. #}
+                                {% if current_pct is not none and current_pct not in commission_rates|map('first') %}
+                                <option value="{{ '%g'|format(current_pct) }}" selected>{{ '%g'|format(current_pct) }}% — current rate (not a standard option)</option>
+                                {% endif %}
                             </select>
                             <small class="text-muted">% we keep from sales</small>
                         </div>
