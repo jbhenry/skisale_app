@@ -223,6 +223,12 @@
             <span>Commission ({{ (vendor.commission_rate * 100)|int }}%):</span>
             <span>&minus; ${{ "%.2f"|format(commission_amt) }}</span>
         </div>
+        {% if check_fee_amt %}
+        <div class="payout-row">
+            <span>Check Processing/Mailing Fee:</span>
+            <span>&minus; ${{ "%.2f"|format(check_fee_amt) }}</span>
+        </div>
+        {% endif %}
         <div class="payout-row total">
             <span>CONSIGNOR PAYOUT:</span>
             <span>${{ "%.2f"|format(payout_amt) }}</span>

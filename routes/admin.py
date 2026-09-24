@@ -19,7 +19,7 @@ from reportlab.lib import colors as rl_colors
 
 from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file, request
 
-from models import db, Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn
+from models import db, Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn, check_fee
 from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START, EASTERN
 from routes.vendors import compute_swap_metrics
 
@@ -279,7 +279,7 @@ def admin_payout_report():
     border = Border(bottom=thin)
 
     # Title row
-    num_cols = 12
+    num_cols = 13
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     title_cell = ws.cell(1, 1, value='Payout Report')
     title_cell.font = Font(bold=True, size=_REPORT_TITLE_SIZE)
@@ -290,7 +290,8 @@ def admin_payout_report():
         'Vendor #', 'Vendor Name',
         'Address', 'City', 'State', 'ZIP',
         'Items Consigned', 'Items Sold',
-        'Total Sold Price', 'Commission Rate', 'Commission Withheld', 'Total Payout'
+        'Total Sold Price', 'Commission Rate', 'Commission Withheld',
+        'Check Fee', 'Total Payout'
     ]
     ws.append(headers)
     for col, _ in enumerate(headers, start=1):
@@ -305,7 +306,8 @@ def admin_payout_report():
         items_consigned = len(vendor.inventory_items)
         sold_price      = d['sold_price']
         commission      = sold_price * vendor.commission_rate
-        payout          = sold_price - commission
+        fee             = check_fee(sold_price - commission)
+        payout          = sold_price - commission - fee
 
         address = ' '.join(filter(None, [vendor.address1, vendor.address2]))
         row = [
@@ -320,12 +322,13 @@ def admin_payout_report():
             sold_price,
             vendor.commission_rate,
             commission,
+            fee,
             payout,
         ]
         ws.append(row)
         r = ws.max_row
         # Format money / percent columns
-        for col in (9, 11, 12):
+        for col in (9, 11, 12, 13):
             ws.cell(r, col).number_format = money_fmt
         ws.cell(r, 10).number_format = '0%'
         for col in (1, 7, 8):
@@ -338,7 +341,7 @@ def admin_payout_report():
         ws.append([])  # blank spacer
         total_row = ws.max_row + 1
         ws.cell(total_row, 8,  value='TOTALS:').font = Font(bold=True)
-        for col, formula_col in ((9, 'I'), (11, 'K'), (12, 'L')):
+        for col, formula_col in ((9, 'I'), (11, 'K'), (12, 'L'), (13, 'M')):
             cell = ws.cell(total_row, col,
                            value=f'=SUM({formula_col}{data_start}:{formula_col}{data_end})')
             cell.number_format = money_fmt
@@ -346,7 +349,7 @@ def admin_payout_report():
             cell.border = Border(top=thin, bottom=Side(style='double'))
 
     # Column widths
-    col_widths = [10, 24, 30, 16, 6, 10, 16, 12, 16, 16, 20, 14]
+    col_widths = [10, 24, 30, 16, 6, 10, 16, 12, 16, 16, 20, 12, 14]
     for i, w in enumerate(col_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
 
@@ -822,10 +825,9 @@ def admin_download_db():
     )
 
 
-@admin_bp.route('/admin/print-checks')
-def admin_print_checks():
-    """Generate a print-ready PDF: one check per page, top third = check,
-    middle and bottom thirds = vendor stubs."""
+def _check_payees():
+    """Per-vendor check data for the Print Checks PDF: one entry per vendor
+    with a positive payout after commission and the check fee."""
     # ── Gather per-vendor payout data ────────────────────────────────────────
     vendor_sales  = {}   # vid -> total sold dollars
     vendor_items  = {}   # vid -> count of items sold
@@ -844,7 +846,8 @@ def admin_print_checks():
     for i, v in enumerate(vendors):
         sold            = vendor_sales[v.id]
         commission      = sold * v.commission_rate
-        payout          = sold - commission
+        fee             = check_fee(sold - commission)
+        payout          = sold - commission - fee
         if payout <= 0:
             continue
         addr1     = ' '.join(filter(None, [v.address1 or '', v.address2 or ''])).strip()
@@ -882,8 +885,17 @@ def admin_print_checks():
             'goods_returned': goods_returned,
             'goods_instock':  goods_instock,
             'deductible':     commission,
+            'check_fee':      fee,
             'amount':         payout,
         })
+    return payees
+
+
+@admin_bp.route('/admin/print-checks')
+def admin_print_checks():
+    """Generate a print-ready PDF: one check per page, top third = check,
+    middle and bottom thirds = vendor stubs."""
+    payees = _check_payees()
 
     # ── PDF layout constants ──────────────────────────────────────────────────
     W, H      = rl_letter            # 612 × 792 pts
@@ -1001,6 +1013,7 @@ def admin_print_checks():
             ('Value Of Goods Received:',      data['goods_received']),
             ('Value Of Goods Sold:',           data['goods_sold']),
             ('Deductible Sales Value:',        data['deductible']),
+            ('Check Processing/Mailing Fee:',  data['check_fee']),
             ('Value Of Goods Donated:',        data['goods_donated']),
             ('Value Of Goods Returned:',       data['goods_returned']),
             ('Value Of Goods still In-Stock:', data['goods_instock']),

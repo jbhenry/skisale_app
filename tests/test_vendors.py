@@ -3,7 +3,8 @@ Tests for vendor routes.
 """
 import io
 import pytest
-from models import Vendor, Inventory
+from models import Vendor, Inventory, Invoice, InvoiceLine
+from routes.vendors import compute_swap_metrics
 
 
 class TestVendorList:
@@ -637,3 +638,67 @@ class TestVendorViewActivateButton:
     def test_activate_button_hidden_when_active(self, client, sample_vendor):
         response = client.get(f'/vendors/{sample_vendor.id}')
         assert b'Activate' not in response.data
+
+
+class TestCheckFeeOnVendorPages:
+    """The $1 check processing/mailing fee comes out of every vendor payout
+    shown anywhere, so the numbers match the printed check."""
+
+    @pytest.fixture
+    def sold(self, db, sample_item, sample_invoice):
+        # $150 sold at 20% commission -> $30 commission, $120 - $1 fee = $119
+        db.session.add(InvoiceLine(invoice_id=sample_invoice.id,
+                                   inventory_id=sample_item.id, price=150.00))
+        sample_item.status = 'Sold'
+        sample_invoice.calculate_totals()
+        db.session.commit()
+        return sample_item
+
+    def test_checkout_receipt_shows_fee(self, client, sold):
+        html = client.get(f'/vendors/{sold.vendor_id}/checkout-receipt').data
+        assert b'Check Processing/Mailing Fee' in html
+        assert b'$119.00' in html
+        assert b'$120.00' not in html
+
+    def test_checkout_receipt_no_fee_without_sales(self, client, sample_item):
+        html = client.get(f'/vendors/{sample_item.vendor_id}/checkout-receipt').data
+        assert b'Check Processing/Mailing Fee' not in html
+
+    def test_vendor_view_payout_after_fee(self, client, sold):
+        html = client.get(f'/vendors/{sold.vendor_id}').data
+        assert b'$119.00' in html
+        assert b'$1.00 check fee' in html
+
+    def test_metrics_deduct_fee_once_per_vendor(self, app, db, sold, sample_vendor, sample_invoice):
+        # A second item for the same vendor: still only one check, one fee
+        item2 = Inventory(sku=7654321, vendor_id=sample_vendor.id, equipment_type='Poles',
+                          price=50.00, status='Sold')
+        db.session.add(item2)
+        db.session.flush()
+        db.session.add(InvoiceLine(invoice_id=sample_invoice.id, inventory_id=item2.id, price=50.00))
+        db.session.commit()
+        with app.test_request_context():
+            m = compute_swap_metrics()
+        # $200 sold, $40 commission, $160 - $1 fee
+        assert m['total_commission'] == pytest.approx(40.00)
+        assert m['total_check_fees'] == pytest.approx(1.00)
+        assert m['total_vendor_payout'] == pytest.approx(159.00)
+
+    def test_metrics_parts_add_up_to_subtotal(self, app, sold):
+        with app.test_request_context():
+            m = compute_swap_metrics()
+        parts = m['total_vendor_payout'] + m['total_commission'] + m['total_check_fees']
+        assert parts == pytest.approx(m['total_subtotal'])
+
+    def test_dashboard_shows_check_fees(self, client, sold):
+        html = client.get('/').data
+        assert b'Check Fees' in html
+        assert b'$119.00' in html
+
+    def test_swap_summary_shows_check_fees(self, client, sold):
+        html = client.get('/admin/summary').data
+        assert b'Check Fees' in html
+        assert b'$119.00' in html
+
+    def test_dashboard_hides_check_fees_without_sales(self, client, db):
+        assert b'Check Fees' not in client.get('/').data

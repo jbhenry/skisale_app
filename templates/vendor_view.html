@@ -179,7 +179,8 @@
                 {% set num_sold = sold_items|length %}
                 {% set total_sales = sold_items|sum(attribute='price') %}
                 {% set commission_amount = total_sales * vendor.commission_rate %}
-                {% set payout_amount = total_sales - commission_amount %}
+                {% set check_fee_amount = check_fee(total_sales - commission_amount) %}
+                {% set payout_amount = total_sales - commission_amount - check_fee_amount %}
                 
                 <div class="row text-center mb-4">
                     <div class="col-md-3">
@@ -204,7 +205,7 @@
                         <div class="border rounded p-3 bg-light">
                             <h3 class="text-success mb-0">${{ "%.2f"|format(payout_amount) }}</h3>
                             <small class="text-muted">Vendor Payout</small>
-                            <br><small class="text-muted">(After {{ (vendor.commission_rate * 100)|int }}% commission)</small>
+                            <br><small class="text-muted">(After {{ (vendor.commission_rate * 100)|int }}% commission{% if check_fee_amount %} and ${{ "%.2f"|format(check_fee_amount) }} check fee{% endif %})</small>
                         </div>
                     </div>
                 </div>

@@ -4,11 +4,21 @@ SkiSale Database Models
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timezone
 
-from constants import SURCHARGE_RATE, SURCHARGE_METHODS, DEFAULT_VENDOR_COMMISSION_RATE
+from constants import SURCHARGE_RATE, SURCHARGE_METHODS, DEFAULT_VENDOR_COMMISSION_RATE, CHECK_FEE
 
 
 def utcnow():
     return datetime.now(timezone.utc)
+
+
+def check_fee(payout):
+    """Check processing/mailing fee deducted from a vendor's payout.
+
+    Charged on any positive payout, but capped at the payout so the check
+    amount never goes negative (a payout of CHECK_FEE or less nets to $0
+    and no check is printed).
+    """
+    return min(CHECK_FEE, payout) if payout > 0 else 0.0
 
 db = SQLAlchemy()
 

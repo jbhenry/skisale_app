@@ -236,6 +236,12 @@
                         <td>Our Commission</td>
                         <td class="right">${{ "%.2f"|format(total_commission) }}</td>
                     </tr>
+                    {% if total_check_fees > 0 %}
+                    <tr class="sub">
+                        <td>Check Fees</td>
+                        <td class="right">${{ "%.2f"|format(total_check_fees) }}</td>
+                    </tr>
+                    {% endif %}
                     <tr>
                         <td><strong>Sales Tax Collected</strong></td>
                         <td class="right">${{ "%.2f"|format(total_tax) }}</td>
@@ -268,6 +274,12 @@
                         <td>Our Commission (kept)</td>
                         <td class="right">${{ "%.2f"|format(total_commission) }}</td>
                     </tr>
+                    {% if total_check_fees > 0 %}
+                    <tr>
+                        <td>Check Fees (kept)</td>
+                        <td class="right">${{ "%.2f"|format(total_check_fees) }}</td>
+                    </tr>
+                    {% endif %}
                     <tr class="total">
                         <td>Net Cash on Hand</td>
                         <td class="right">${{ "%.2f"|format(total_sales) }}</td>
