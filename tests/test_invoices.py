@@ -444,6 +444,54 @@ class TestInvoiceReceipt:
         assert b'NOTICE-DISCLAIMER' in response.data
 
 
+class TestInvoiceReceiptLetter:
+    """Letter-size version of the sales receipt for the laser printer."""
+
+    @pytest.fixture
+    def sold_invoice(self, client, db, sample_item, sample_invoice):
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={'action': 'add_item', 'sku': sample_item.sku})
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'complete', 'customer_name': 'Bob Smith', 'tax_rate': '6',
+            'discount_rate': '0', 'payment_method': 'Credit Card',
+        })
+        db.session.refresh(sample_invoice)
+        return sample_invoice
+
+    def test_letter_receipt_renders_letter_layout(self, client, sold_invoice):
+        response = client.get(f'/invoices/{sold_invoice.id}/receipt?format=letter')
+        assert response.status_code == 200
+        assert b'size: letter' in response.data
+        assert b'SALES RECEIPT' in response.data
+
+    def test_default_is_still_receipt_printer(self, client, sold_invoice):
+        response = client.get(f'/invoices/{sold_invoice.id}/receipt')
+        assert b'size: 80mm' in response.data
+        assert b'size: letter' not in response.data
+
+    def test_letter_receipt_contents(self, client, sold_invoice, sample_item):
+        html = client.get(f'/invoices/{sold_invoice.id}/receipt?format=letter').data
+        assert b'Bob Smith' in html
+        assert str(sample_item.sku).encode() in html
+        assert b'Fischer RC4 160cm' in html
+        assert b'Credit Card Surcharge' in html
+        # $150 + 6% tax + 3% surcharge
+        assert b'$163.50' in html
+        assert b'NOTICE-DISCLAIMER' in html
+        assert b'4141 Bauer Road' in html
+
+    def test_letter_receipt_404_for_missing_invoice(self, client):
+        assert client.get('/invoices/9999/receipt?format=letter').status_code == 404
+
+    def test_invoice_view_links_both_receipts(self, client, sold_invoice):
+        html = client.get(f'/invoices/{sold_invoice.id}').data
+        assert f'/invoices/{sold_invoice.id}/receipt"'.encode() in html
+        assert f'/invoices/{sold_invoice.id}/receipt?format=letter"'.encode() in html
+
+    def test_invoice_list_links_both_receipts(self, client, sold_invoice):
+        html = client.get('/invoices').data
+        assert f'/invoices/{sold_invoice.id}/receipt?format=letter"'.encode() in html
+
+
 class TestInvoiceReturnItem:
     def test_return_item_sets_in_stock(self, client, db, sample_item, sample_invoice):
         line = InvoiceLine(

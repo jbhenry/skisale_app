@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt - Invoice #{{ invoice.id }}</title>
+    <style>
+        @page {
+            size: letter portrait;
+            margin: 0.6in;
+        }
+
+        @media print {
+            .no-print { display: none; }
+            body { margin: 0; }
+        }
+
+        @media screen {
+            body {
+                max-width: 7.3in;
+                margin: 20px auto;
+                padding: 0.6in;
+                box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+            }
+            html { background: #eee; }
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            color: #000;
+            background: #fff;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 3px solid #1e3c72;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+
+        .header h1 {
+            margin: 0 0 4px 0;
+            font-size: 18pt;
+            color: #1e3c72;
+        }
+
+        .header p {
+            margin: 0;
+            font-size: 10pt;
+        }
+
+        .header .doc-title {
+            text-align: right;
+        }
+
+        .header .doc-title h2 {
+            margin: 0 0 4px 0;
+            font-size: 16pt;
+            letter-spacing: 2px;
+        }
+
+        .info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 18px;
+        }
+
+        .info table td {
+            padding: 2px 12px 2px 0;
+            vertical-align: top;
+        }
+
+        .info table td:first-child {
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+        }
+
+        .items th {
+            background: #1e3c72;
+            color: #fff;
+            text-align: left;
+            padding: 6px 8px;
+            font-size: 10pt;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .items td {
+            padding: 6px 8px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .items .num {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .items tr { page-break-inside: avoid; }
+
+        .totals {
+            margin-left: auto;
+            width: 3.2in;
+            border-collapse: collapse;
+            page-break-inside: avoid;
+        }
+
+        .totals td {
+            padding: 4px 8px;
+        }
+
+        .totals td:last-child {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .totals tr.total td {
+            font-size: 13pt;
+            font-weight: bold;
+            border-top: 2px solid #000;
+            border-bottom: 3px double #000;
+        }
+
+        .footer {
+            margin-top: 28px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .footer p {
+            margin: 3px 0;
+        }
+
+        .notes {
+            margin-top: 12px;
+            font-style: italic;
+        }
+
+        .disclaimer {
+            margin-top: 24px;
+            padding-top: 10px;
+            border-top: 1px solid #999;
+            font-size: 8.5pt;
+            white-space: pre-wrap;
+            page-break-inside: avoid;
+        }
+
+        .print-button {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .btn {
+            background-color: #0d6efd;
+            color: white;
+            padding: 10px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background-color: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button no-print">
+        <button class="btn" onclick="window.print()">🖨️ Print Receipt</button>
+        <button class="btn" style="background:#6c757d" onclick="window.close()">Close</button>
+    </div>
+
+    <div class="header">
+        <div>
+            <h1>{{ org_name }}</h1>
+            <p>{{ org_addr1 }}</p>
+            <p>{{ org_addr2 }}</p>
+        </div>
+        <div class="doc-title">
+            <h2>SALES RECEIPT</h2>
+            <p><strong>Invoice #{{ invoice.id }}</strong></p>
+        </div>
+    </div>
+
+    <div class="info">
+        <table>
+            <tr>
+                <td>Date:</td>
+                <td>{{ (invoice.invoice_date | localtime).strftime('%B %d, %Y %I:%M %p') }}</td>
+            </tr>
+            <tr>
+                <td>Customer:</td>
+                <td>{{ invoice.customer_name or 'Walk-in Customer' }}</td>
+            </tr>
+        </table>
+        <table>
+            {% if invoice.payment_method %}
+            <tr>
+                <td>Payment:</td>
+                <td>{{ invoice.payment_method }}</td>
+            </tr>
+            {% endif %}
+            {% if invoice.register_id %}
+            <tr>
+                <td>Register:</td>
+                <td>{{ invoice.register_id }}</td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <table class="items">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Description</th>
+                <th>Type</th>
+                <th class="num">Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in invoice.lines %}
+            <tr>
+                <td>{{ line.inventory_item.sku }}</td>
+                <td>{{ line.inventory_item.description or '—' }}</td>
+                <td>{{ line.inventory_item.equipment_type }}</td>
+                <td class="num">${{ "%.2f"|format(line.price) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td>Subtotal ({{ invoice.lines|length }} item{{ 's' if invoice.lines|length != 1 }}):</td>
+            <td>${{ "%.2f"|format(invoice.subtotal) }}</td>
+        </tr>
+        {% if invoice.discount_amount %}
+        <tr>
+            <td>Discount ({{ (invoice.discount_rate * 100)|round(0)|int }}%):</td>
+            <td>-${{ "%.2f"|format(invoice.discount_amount) }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td>Sales Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</td>
+            <td>${{ "%.2f"|format(invoice.tax_amount) }}</td>
+        </tr>
+        {% if invoice.surcharge_amount %}
+        <tr>
+            <td>{{ invoice.payment_method }} Surcharge ({{ (invoice.surcharge_rate * 100)|round(0)|int }}%):</td>
+            <td>${{ "%.2f"|format(invoice.surcharge_amount) }}</td>
+        </tr>
+        {% endif %}
+        <tr class="total">
+            <td>TOTAL:</td>
+            <td>${{ "%.2f"|format(invoice.total) }}</td>
+        </tr>
+        {% if invoice.amount_tendered is not none %}
+        <tr>
+            <td>Amount Tendered:</td>
+            <td>${{ "%.2f"|format(invoice.amount_tendered) }}</td>
+        </tr>
+        <tr>
+            <td>Change Due:</td>
+            <td>${{ "%.2f"|format(invoice.change_due) }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    {% if invoice.notes %}
+    <div class="notes">Notes: {{ invoice.notes }}</div>
+    {% endif %}
+
+    <div class="footer">
+        <p><strong>Thank you for supporting Mt. Brighton Ski Patrol!</strong></p>
+        <p>All sales final.</p>
+    </div>
+
+    {% if disclaimer %}
+    <div class="disclaimer">{{ disclaimer }}</div>
+    {% endif %}
+</body>
+</html>
