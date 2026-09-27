@@ -28,10 +28,16 @@
                 <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id, returns='1') }}" class="btn btn-warning">
                     <i class="bi bi-arrow-return-left"></i> Return Items
                 </a>
-                <a href="{{ url_for('invoices.invoice_receipt', invoice_id=invoice.id) }}"
-                   class="btn btn-primary" target="_blank">
-                    <i class="bi bi-printer"></i> Print Receipt
-                </a>
+                <div class="btn-group" role="group" aria-label="Print receipt">
+                    <a href="{{ url_for('invoices.invoice_receipt', invoice_id=invoice.id) }}"
+                       class="btn btn-primary" target="_blank" title="80mm receipt printer">
+                        <i class="bi bi-printer"></i> Receipt Printer
+                    </a>
+                    <a href="{{ url_for('invoices.invoice_receipt', invoice_id=invoice.id, format='letter') }}"
+                       class="btn btn-outline-primary" target="_blank" title="Letter-size paper (laser printer)">
+                        <i class="bi bi-file-earmark-text"></i> Letter Paper
+                    </a>
+                </div>
                 {% endif %}
             </div>
         </div>

@@ -4,7 +4,8 @@ Invoice routes and abandoned-invoice cleanup.
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from models import db, Inventory, Invoice, InvoiceLine, InvoiceReturn
-from constants import PAYMENT_METHODS, DEFAULT_TAX_RATE, EMPLOYEE_DISCOUNT_RATE, SALES_RECEIPT_DISCLAIMER
+from constants import (PAYMENT_METHODS, DEFAULT_TAX_RATE, EMPLOYEE_DISCOUNT_RATE, SALES_RECEIPT_DISCLAIMER,
+                       ORG_NAME, ORG_ADDR1, ORG_ADDR2)
 
 invoices_bp = Blueprint('invoices', __name__)
 
@@ -245,8 +246,13 @@ def invoice_return_item(invoice_id):
 
 @invoices_bp.route('/invoices/<int:invoice_id>/receipt')
 def invoice_receipt(invoice_id):
-    """Print receipt for invoice"""
+    """Print receipt for invoice: 80mm receipt printer by default, or
+    letter-size paper for the laser printer with ?format=letter"""
     invoice = db.get_or_404(Invoice, invoice_id)
+    if request.args.get('format') == 'letter':
+        return render_template('invoice_receipt_letter.html', invoice=invoice,
+                               disclaimer=SALES_RECEIPT_DISCLAIMER,
+                               org_name=ORG_NAME, org_addr1=ORG_ADDR1, org_addr2=ORG_ADDR2)
     return render_template('invoice_receipt.html', invoice=invoice, disclaimer=SALES_RECEIPT_DISCLAIMER)
 
 
