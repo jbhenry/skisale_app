@@ -15,10 +15,16 @@
                     <i class="bi bi-plus-circle"></i> New Sale
                 </a>
                 {% if invoice.returns %}
-                <a href="{{ url_for('invoices.invoice_return_receipt', invoice_id=invoice.id) }}"
-                   class="btn btn-outline-warning" target="_blank">
-                    <i class="bi bi-printer"></i> Print Refund Receipt
-                </a>
+                <div class="btn-group" role="group" aria-label="Print refund receipt">
+                    <a href="{{ url_for('invoices.invoice_return_receipt', invoice_id=invoice.id) }}"
+                       class="btn btn-outline-warning" target="_blank" title="Refund receipt — 80mm receipt printer">
+                        <i class="bi bi-printer"></i> Refund Receipt
+                    </a>
+                    <a href="{{ url_for('invoices.invoice_return_receipt', invoice_id=invoice.id, format='letter') }}"
+                       class="btn btn-outline-warning" target="_blank" title="Refund receipt — letter-size paper (laser printer)">
+                        <i class="bi bi-file-earmark-text"></i> Letter
+                    </a>
+                </div>
                 {% endif %}
                 {% if returns_mode %}
                 <a href="{{ url_for('invoices.invoice_view', invoice_id=invoice.id) }}" class="btn btn-outline-secondary">

@@ -258,10 +258,22 @@ def invoice_receipt(invoice_id):
 
 @invoices_bp.route('/invoices/<int:invoice_id>/return_receipt')
 def invoice_return_receipt(invoice_id):
-    """Print refund receipt listing every item returned from this invoice"""
+    """Print refund receipt listing every item returned from this invoice:
+    80mm receipt printer by default, or letter-size paper with ?format=letter"""
     invoice = db.get_or_404(Invoice, invoice_id)
-    refund_total = round(sum(r.refund_amount for r in invoice.returns), 2)
-    return render_template('invoice_return_receipt.html', invoice=invoice, refund_total=refund_total)
+    returns = invoice.returns
+    refund = {
+        'count':     len(returns),
+        'subtotal':  round(sum(r.price for r in returns), 2),
+        'discount':  round(sum(r.discount for r in returns), 2),
+        'tax':       round(sum(r.tax for r in returns), 2),
+        'surcharge': round(sum(r.surcharge for r in returns), 2),
+        'total':     round(sum(r.refund_amount for r in returns), 2),
+    }
+    if request.args.get('format') == 'letter':
+        return render_template('invoice_return_receipt_letter.html', invoice=invoice, refund=refund,
+                               org_name=ORG_NAME, org_addr1=ORG_ADDR1, org_addr2=ORG_ADDR2)
+    return render_template('invoice_return_receipt.html', invoice=invoice, refund=refund)
 
 
 @invoices_bp.route('/invoices/<int:invoice_id>/delete', methods=['POST'])

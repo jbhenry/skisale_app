@@ -138,11 +138,6 @@
             background-color: #0b5ed7;
         }
     
-        .items-table .detail {
-            font-size: 8pt;
-            color: #333;
-        }
-
         .signature {
             margin-top: 28px;
             font-size: 9pt;
@@ -183,7 +178,7 @@
         <thead>
             <tr>
                 <th>Returned Item</th>
-                <th class="price">Refund</th>
+                <th class="price">Price</th>
             </tr>
         </thead>
         <tbody>
@@ -192,15 +187,9 @@
                 <td>
                     <strong>{{ r.sku }}</strong><br>
                     <small>{{ r.description or r.equipment_type }}</small><br>
-                    <span class="detail">
-                        Price ${{ "%.2f"|format(r.price) }}
-                        {% if r.discount %}&minus; disc ${{ "%.2f"|format(r.discount) }}{% endif %}
-                        + tax ${{ "%.2f"|format(r.tax) }}
-                        {% if r.surcharge %}+ surch ${{ "%.2f"|format(r.surcharge) }}{% endif %}
-                        <br>Returned {{ (r.returned_at | localtime).strftime('%Y-%m-%d %I:%M %p') }}
-                    </span>
+                    <small>Returned {{ (r.returned_at | localtime).strftime('%Y-%m-%d %I:%M %p') }}</small>
                 </td>
-                <td class="price">${{ "%.2f"|format(r.refund_amount) }}</td>
+                <td class="price">${{ "%.2f"|format(r.price) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -208,12 +197,28 @@
 
     <div class="totals">
         <div class="row">
-            <span>Items Returned:</span>
-            <span>{{ invoice.returns|length }}</span>
+            <span>Subtotal ({{ refund.count }} item{{ 's' if refund.count != 1 }}):</span>
+            <span>${{ "%.2f"|format(refund.subtotal) }}</span>
         </div>
+        {% if refund.discount %}
+        <div class="row">
+            <span>Discount ({{ (invoice.discount_rate * 100)|round(0)|int }}%):</span>
+            <span>-${{ "%.2f"|format(refund.discount) }}</span>
+        </div>
+        {% endif %}
+        <div class="row">
+            <span>Sales Tax ({{ (invoice.tax_rate * 100)|round(1) }}%):</span>
+            <span>${{ "%.2f"|format(refund.tax) }}</span>
+        </div>
+        {% if refund.surcharge %}
+        <div class="row">
+            <span>{{ invoice.payment_method }} Surcharge ({{ (invoice.surcharge_rate * 100)|round(0)|int }}%):</span>
+            <span>${{ "%.2f"|format(refund.surcharge) }}</span>
+        </div>
+        {% endif %}
         <div class="row total">
             <span>TOTAL REFUND:</span>
-            <span>${{ "%.2f"|format(refund_total) }}</span>
+            <span>${{ "%.2f"|format(refund.total) }}</span>
         </div>
     </div>
 

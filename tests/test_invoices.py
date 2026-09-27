@@ -1054,12 +1054,52 @@ class TestInvoiceReturnReceipt:
         assert client.get('/invoices/99999/return_receipt').status_code == 404
 
     def test_invoice_view_links_to_return_receipt(self, client, db, sample_item, sample_invoice):
+        receipt = f'/invoices/{sample_invoice.id}/return_receipt"'.encode()
+        letter = f'/invoices/{sample_invoice.id}/return_receipt?format=letter"'.encode()
         response = client.get(f'/invoices/{sample_invoice.id}')
-        assert b'Print Refund Receipt' not in response.data
+        assert receipt not in response.data
+        assert letter not in response.data
         self._sell_and_return(client, db, sample_item, sample_invoice)
         response = client.get(f'/invoices/{sample_invoice.id}')
-        assert b'Print Refund Receipt' in response.data
+        assert receipt in response.data
+        assert letter in response.data
         assert b'Returned Items (1)' in response.data
+
+    @pytest.mark.parametrize('fmt', ['', '?format=letter'])
+    def test_return_receipt_itemizes_tax_and_surcharge(self, client, db, sample_item,
+                                                       sample_invoice, fmt):
+        """Regression: the refund's tax and surcharge were only in faint
+        per-item text, so the printed totals didn't show them."""
+        self._sell_and_return(client, db, sample_item, sample_invoice)
+        html = client.get(f'/invoices/{sample_invoice.id}/return_receipt{fmt}').data.decode()
+        totals = html.split('Subtotal (1 item)', 1)[1]
+        # $150 price, -$15 discount (10%), +$8.10 tax (6%), +$4.05 surcharge (3%)
+        assert '$150.00' in totals
+        assert 'Discount (10%)' in totals and '-$15.00' in totals
+        assert 'Sales Tax (6.0%)' in totals and '$8.10' in totals
+        assert 'Credit Card Surcharge (3%)' in totals and '$4.05' in totals
+        assert 'TOTAL REFUND' in totals and '$147.15' in totals
+
+    def test_return_receipt_cash_has_no_surcharge_line(self, client, db, sample_item, sample_invoice):
+        self._sell_and_return(client, db, sample_item, sample_invoice, payment_method='Cash')
+        html = client.get(f'/invoices/{sample_invoice.id}/return_receipt').data
+        assert b'Surcharge' not in html
+        # $150 - $15 + $8.10 tax
+        assert b'$143.10' in html
+
+    def test_letter_return_receipt(self, client, db, sample_item, sample_invoice):
+        self._sell_and_return(client, db, sample_item, sample_invoice)
+        response = client.get(f'/invoices/{sample_invoice.id}/return_receipt?format=letter')
+        assert response.status_code == 200
+        assert b'size: letter' in response.data
+        assert b'REFUND RECEIPT' in response.data
+        assert b'Customer Signature' in response.data
+        assert b'4141 Bauer Road' in response.data
+
+    def test_letter_return_receipt_with_no_returns(self, client, sample_invoice):
+        response = client.get(f'/invoices/{sample_invoice.id}/return_receipt?format=letter')
+        assert response.status_code == 200
+        assert b'No items have been returned' in response.data
 
     def test_deleting_invoice_deletes_returns(self, client, db, sample_item, sample_invoice):
         self._sell_and_return(client, db, sample_item, sample_invoice)
