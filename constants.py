@@ -54,7 +54,9 @@ DEFAULT_TAX_RATE = 0.06  # 6%
 SURCHARGE_RATE = 0.03  # 3%
 SURCHARGE_METHODS = {'Credit Card', 'Venmo'}
 
-# Employee discount rate applied when an employee discount is selected
+# Employee discount rate applied when an employee discount is selected.
+# Set to 0.0 to suspend the employee discount (the option is hidden on the
+# sale forms); set back to 0.10 to re-enable. Restart the app after changing.
 EMPLOYEE_DISCOUNT_RATE = 0.10  # 10%
 
 # Default commission rate for new vendors (must be one of the COMMISSION_RATES; the vendor form preselects it)

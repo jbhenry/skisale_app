@@ -35,7 +35,9 @@
                             <label for="discount_rate" class="form-label">Discount</label>
                             <select class="form-select" id="discount_rate" name="discount_rate">
                                 <option value="0">No discount (0%)</option>
+                                {% if employee_discount_pct %}
                                 <option value="{{ employee_discount_pct }}">Employee discount ({{ employee_discount_pct }}%)</option>
+                                {% endif %}
                             </select>
                         </div>
                         <div class="col-md-4">

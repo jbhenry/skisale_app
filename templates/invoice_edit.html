@@ -116,8 +116,16 @@
                             <div class="mb-3">
                                 <label for="discount_rate" class="form-label">Discount</label>
                                 <select class="form-select" id="discount_rate" name="discount_rate">
-                                    <option value="0" {% if invoice.discount_rate == 0 %}selected{% endif %}>No discount (0%)</option>
-                                    <option value="{{ employee_discount_pct }}" {% if invoice.discount_rate == employee_discount_pct / 100 %}selected{% endif %}>Employee discount ({{ employee_discount_pct }}%)</option>
+                                    {% set current_discount_pct = (invoice.discount_rate * 100)|round|int %}
+                                    <option value="0" {% if current_discount_pct == 0 %}selected{% endif %}>No discount (0%)</option>
+                                    {% if employee_discount_pct %}
+                                    <option value="{{ employee_discount_pct }}" {% if current_discount_pct == employee_discount_pct %}selected{% endif %}>Employee discount ({{ employee_discount_pct }}%)</option>
+                                    {% endif %}
+                                    {# Keep a discount this invoice already has if it's no longer offered
+                                       (e.g. the employee discount was suspended mid-sale). #}
+                                    {% if current_discount_pct and current_discount_pct != employee_discount_pct %}
+                                    <option value="{{ current_discount_pct }}" selected>Discount ({{ current_discount_pct }}%) — current</option>
+                                    {% endif %}
                                 </select>
                             </div>
 
