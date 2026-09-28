@@ -1105,3 +1105,48 @@ class TestInvoiceReturnReceipt:
         self._sell_and_return(client, db, sample_item, sample_invoice)
         client.post(f'/invoices/{sample_invoice.id}/delete')
         assert InvoiceReturn.query.count() == 0
+
+
+class TestEmployeeDiscountSuspended:
+    """EMPLOYEE_DISCOUNT_RATE = 0 suspends the employee discount: the option
+    is hidden, but an open invoice that already has one keeps it."""
+
+    @pytest.fixture
+    def suspended(self, monkeypatch):
+        import routes.invoices
+        monkeypatch.setattr(routes.invoices, 'EMPLOYEE_DISCOUNT_RATE', 0.0)
+
+    def test_active_rate_shows_option(self, client, sample_invoice, monkeypatch):
+        import routes.invoices
+        monkeypatch.setattr(routes.invoices, 'EMPLOYEE_DISCOUNT_RATE', 0.10)
+        assert b'Employee discount (10%)' in client.get('/invoices/new').data
+        assert b'Employee discount (10%)' in client.get(f'/invoices/{sample_invoice.id}/edit').data
+
+    def test_suspended_hides_option_on_new_sale(self, client, suspended):
+        html = client.get('/invoices/new').data
+        assert b'Employee discount' not in html
+        assert b'No discount (0%)' in html
+
+    def test_suspended_hides_option_on_edit(self, client, sample_invoice, suspended):
+        html = client.get(f'/invoices/{sample_invoice.id}/edit').data
+        assert b'Employee discount' not in html
+        assert b'\xe2\x80\x94 current' not in html  # no leftover-discount option
+
+    def test_open_discounted_invoice_keeps_discount(self, client, db, sample_item,
+                                                    sample_invoice, suspended):
+        # Sale started at 10% before the discount was suspended
+        sample_invoice.discount_rate = 0.10
+        db.session.commit()
+        html = client.get(f'/invoices/{sample_invoice.id}/edit').data.decode()
+        select = html.split('id="discount_rate"', 1)[1].split('</select>', 1)[0]
+        assert '<option value="10" selected>Discount (10%) — current</option>' in select
+
+        # Completing with the preselected value keeps the 10%
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={'action': 'add_item', 'sku': sample_item.sku})
+        client.post(f'/invoices/{sample_invoice.id}/edit', data={
+            'action': 'complete', 'customer_name': 'Bob Smith', 'tax_rate': '6',
+            'discount_rate': '10', 'payment_method': 'Cash',
+        })
+        db.session.refresh(sample_invoice)
+        assert sample_invoice.discount_rate == pytest.approx(0.10)
+        assert sample_invoice.discount_amount == pytest.approx(15.00)
