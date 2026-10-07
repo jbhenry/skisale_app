@@ -127,11 +127,35 @@ class TestInventoryCreate:
             'sku': '1234567',  # already exists
             'vendor_id': sample_vendor.id,
             'equipment_type': 'Skis',
+            'description': 'Duplicate item',
             'price': '100.00',
             'status': 'In-Stock',
         }, follow_redirects=True)
 
         assert Inventory.query.filter_by(sku=1234567).count() == 1
+        assert b'SKU 1234567 already exists' in response.data
+        assert b'IntegrityError' not in response.data
+
+    def test_failed_create_keeps_entered_values(self, client, db, sample_vendor, sample_item):
+        response = client.post('/inventory/new', data={
+            'sku': '1234567',  # already exists
+            'vendor_id': sample_vendor.id,
+            'equipment_type': 'Boots',
+            'description': 'Keep this description',
+            'price': '42.50',
+            'status': 'In-Stock',
+            'donate_if_not_sold': 'on',
+            'notes': 'Keep these notes',
+        }, follow_redirects=True)
+
+        html = response.data.decode()
+        assert 'value="1234567"' in html
+        assert 'value="Keep this description"' in html
+        assert 'value="42.50"' in html
+        assert 'Keep these notes</textarea>' in html
+        assert f'<option value="{sample_vendor.id}" selected' in ' '.join(html.split())
+        assert '<option value="Boots" selected' in ' '.join(html.split())
+        assert 'checked' in html
 
     def test_missing_description_rejected(self, client, db, sample_vendor):
         response = client.post('/inventory/new', data={
@@ -179,6 +203,29 @@ class TestInventoryEdit:
         db.session.refresh(sample_item)
         assert sample_item.price == 200.00
         assert sample_item.description == 'Updated description'
+
+    def test_edit_duplicate_sku_rejected(self, client, db, sample_item, sample_vendor):
+        other = Inventory(sku=7654321, vendor_id=sample_vendor.id, equipment_type='Skis',
+                          description='Other item', price=50.00, status='In-Stock')
+        db.session.add(other)
+        db.session.commit()
+
+        response = client.post(f'/inventory/{sample_item.id}/edit', data={
+            'sku': '7654321',  # belongs to the other item
+            'vendor_id': sample_vendor.id,
+            'equipment_type': 'Skis',
+            'description': 'Updated description',
+            'price': '200.00',
+            'status': 'In-Stock',
+        }, follow_redirects=True)
+
+        assert b'SKU 7654321 already exists' in response.data
+        assert b'IntegrityError' not in response.data
+        db.session.refresh(sample_item)
+        assert sample_item.sku == 1234567
+        # The form shows the rejected edits, not the stored values
+        assert b'value="7654321"' in response.data
+        assert b'value="Updated description"' in response.data
 
     def test_edit_nonexistent_item(self, client):
         response = client.get('/inventory/9999/edit')
