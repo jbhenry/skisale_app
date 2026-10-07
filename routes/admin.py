@@ -130,8 +130,11 @@ def _report_response(wb, filename):
     return _xlsx_response(wb, filename)
 
 
-def _inventory_xlsx(title, status_filter, sheet_name):
-    """Build an xlsx workbook listing inventory items matching status_filter."""
+def _inventory_xlsx(title, status_filter, sheet_name, include_phone=False):
+    """Build an xlsx workbook listing inventory items matching status_filter.
+
+    include_phone adds a Vendor Phone column after the vendor name.
+    """
     items = (Inventory.query
              .filter_by(status=status_filter)
              .join(Vendor)
@@ -148,15 +151,22 @@ def _inventory_xlsx(title, status_filter, sheet_name):
     money_fmt   = '"$"#,##0.00'
     thin        = Side(style='thin')
 
+    headers = ['SKU', 'Vendor #', 'Vendor Name', 'Equipment Type', 'Description', 'Price']
+    col_widths = [10, 10, 22, 16, 36, 10]
+    if include_phone:
+        headers.insert(3, 'Vendor Phone')
+        col_widths.insert(3, 16)
+    num_cols = len(headers)
+    price_col = num_cols
+    price_letter = get_column_letter(price_col)
+
     # Title row
-    num_cols = 6
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     title_cell = ws.cell(1, 1, value=title)
     title_cell.font = Font(bold=True, size=_REPORT_TITLE_SIZE)
     title_cell.alignment = Alignment(horizontal='center')
 
     # Header row (row 2)
-    headers = ['SKU', 'Vendor #', 'Vendor Name', 'Equipment Type', 'Description', 'Price']
     ws.append(headers)
     for col in range(1, len(headers) + 1):
         cell = ws.cell(row=2, column=col)
@@ -165,16 +175,19 @@ def _inventory_xlsx(title, status_filter, sheet_name):
         cell.alignment = center
 
     for item in items:
-        ws.append([
+        row = [
             item.sku,
             item.vendor_id,
             item.vendor.full_name,
             item.equipment_type,
             item.description or '',
             item.price,
-        ])
+        ]
+        if include_phone:
+            row.insert(3, item.vendor.phone or '')
+        ws.append(row)
         r = ws.max_row
-        ws.cell(r, 6).number_format = money_fmt
+        ws.cell(r, price_col).number_format = money_fmt
         for col in (1, 2):
             ws.cell(r, col).alignment = center
 
@@ -183,16 +196,16 @@ def _inventory_xlsx(title, status_filter, sheet_name):
         data_end = ws.max_row
         ws.append([])
         total_row = ws.max_row + 1
-        ws.cell(total_row, 5, value='TOTALS:').font = Font(bold=True)
-        ws.cell(total_row, 6, value=f'=SUM(F3:F{data_end})').number_format = money_fmt
-        ws.cell(total_row, 6).font = Font(bold=True)
-        ws.cell(total_row, 6).border = Border(
+        ws.cell(total_row, price_col - 1, value='TOTALS:').font = Font(bold=True)
+        ws.cell(total_row, price_col,
+                value=f'=SUM({price_letter}3:{price_letter}{data_end})').number_format = money_fmt
+        ws.cell(total_row, price_col).font = Font(bold=True)
+        ws.cell(total_row, price_col).border = Border(
             top=thin, bottom=Side(style='double'))
         count_cell = ws.cell(total_row, 1, value=len(items))
         count_cell.font      = Font(bold=True)
         count_cell.alignment = center
 
-    col_widths = [10, 10, 22, 16, 36, 10]
     for i, w in enumerate(col_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = w
     ws.freeze_panes = 'A3'
@@ -374,7 +387,8 @@ def admin_mark_donated():
 @admin_bp.route('/admin/report-instock')
 def admin_report_instock():
     """Download xlsx of all inventory items still In-Stock."""
-    wb = _inventory_xlsx('In-Stock Inventory', 'In-Stock', 'In-Stock Items')
+    wb = _inventory_xlsx('In-Stock Inventory', 'In-Stock', 'In-Stock Items',
+                         include_phone=True)
     return _report_response(wb, f'instock_report_{date.today().isoformat()}.xlsx')
 
 

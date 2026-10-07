@@ -77,7 +77,7 @@ def full_db(db):
     vendor3 (25% commission):  ← NO sales, should be excluded from payout/checks
         item6   $50  In-Stock
     """
-    v1 = Vendor(first_name='Alice', last_name='Smith',
+    v1 = Vendor(first_name='Alice', last_name='Smith', phone='555-123-4567',
                 commission_rate=0.20, active=True)
     v2 = Vendor(first_name='Bob',   last_name='Jones',
                 commission_rate=0.30, active=True)
@@ -218,8 +218,23 @@ class TestInstockReport:
         headers = [cell.value for cell in wb.active[2]]
         assert 'SKU'            in headers
         assert 'Vendor Name' in headers
+        assert 'Vendor Phone'   in headers
         assert 'Price'          in headers
         assert 'Description'    in headers
+
+    def test_vendor_phone_column(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/report-instock'))
+        headers = [cell.value for cell in wb.active[2]]
+        phone_idx = headers.index('Vendor Phone')
+        assert phone_idx == headers.index('Vendor Name') + 1
+        phones = {r[0]: r[phone_idx] for r in rows(wb.active) if r[0] is not None}
+        assert phones[2000002] == '555-123-4567'   # Alice has a phone
+        assert not phones[2000005]                  # Bob has none
+
+    def test_vendor_phone_in_html_view(self, client, full_db):
+        html = client.get('/admin/report-instock?format=html').data
+        assert b'Vendor Phone' in html
+        assert b'555-123-4567' in html
 
     def test_only_instock_items_included(self, client, full_db):
         """Sold and Donated items must not appear; 3 In-Stock items should."""
@@ -241,12 +256,18 @@ class TestInstockReport:
 
     def test_prices_are_correct(self, client, full_db):
         wb = parse_xlsx(client.get('/admin/report-instock'))
-        price_col = 6  # column F
+        price_col = 7  # column G
         prices = {ws_row[0].value: ws_row[price_col - 1].value
                   for ws_row in wb.active.iter_rows(min_row=3)
                   if ws_row[0].value is not None}
         assert prices.get(2000002) == pytest.approx(80.00)
         assert prices.get(2000005) == pytest.approx(120.00)
+
+    def test_total_sums_price_column(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/report-instock'))
+        ws = wb.active
+        assert ws.cell(ws.max_row, 7).value == '=SUM(G3:G5)'
+        assert ws.cell(ws.max_row, 6).value == 'TOTALS:'
 
     def test_empty_db_returns_200(self, client, db):
         response = client.get('/admin/report-instock')
@@ -277,6 +298,12 @@ class TestDonatedReport:
         assert 2000003 in skus      # item3 Donated ✓
         assert 2000002 not in skus  # In-Stock ✗
         assert 2000001 not in skus  # Sold ✗
+
+    def test_no_vendor_phone_column(self, client, full_db):
+        wb = parse_xlsx(client.get('/admin/report-donated'))
+        headers = [cell.value for cell in wb.active[2]]
+        assert 'Vendor Phone' not in headers
+        assert headers[-1] == 'Price'
 
     def test_correct_donated_count(self, client, full_db):
         wb = parse_xlsx(client.get('/admin/report-donated'))
