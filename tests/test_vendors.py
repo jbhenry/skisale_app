@@ -206,6 +206,13 @@ class TestVendorReceipt:
         response = client.get(f'/vendors/{sample_vendor.id}/receipt')
         assert b'WINTER SPORTS EQUIPMENT SALE' in response.data
 
+    def test_receipt_signatures_between_payout_and_disclaimer(self, client, sample_item):
+        html = client.get(f'/vendors/{sample_item.vendor_id}/receipt').data.decode()
+        payout = html.index('Potential Payout')
+        signature = html.index('Vendor Signature')
+        disclaimer = html.index('<div class="disclaimer">')
+        assert payout < signature < disclaimer
+
 
 class TestVendorCheckoutReceipt:
     @pytest.fixture()

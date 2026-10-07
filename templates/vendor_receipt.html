@@ -254,11 +254,6 @@
     <div class="empty">No inventory on file for this vendor.</div>
     {% endif %}
 
-    <!-- Disclaimer -->
-    {% if disclaimer %}
-    <div class="disclaimer">{{ disclaimer }}</div>
-    {% endif %}
-
     <!-- Signature lines -->
     <div class="signature-line">
         <div class="sig-block">
@@ -274,6 +269,11 @@
             <div class="sig-label">Date</div>
         </div>
     </div>
+
+    <!-- Disclaimer -->
+    {% if disclaimer %}
+    <div class="disclaimer">{{ disclaimer }}</div>
+    {% endif %}
 
 </body>
 </html>
