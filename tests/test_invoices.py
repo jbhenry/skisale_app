@@ -734,6 +734,10 @@ class TestDashboard:
         response = client.get('/')
         assert response.status_code == 200
 
+    def test_dashboard_quick_actions_at_top(self, client):
+        html = client.get('/').data.decode()
+        assert html.index('Quick Actions') < html.index('Total Sales')
+
     def test_dashboard_totals_with_sale(self, client, db, sample_vendor, sample_item, sample_invoice):
         # Complete a sale
         line = InvoiceLine(

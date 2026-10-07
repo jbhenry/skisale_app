@@ -10,6 +10,31 @@
     </div>
 </div>
 
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5 class="mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ url_for('invoices.invoice_new') }}" class="btn btn-success">
+                        <i class="bi bi-cart-plus"></i> New Sale
+                    </a>
+                    <a href="{{ url_for('vendors.vendor_new') }}" class="btn btn-info">
+                        <i class="bi bi-person-plus"></i> New Vendor
+                    </a>
+                    <a href="{{ url_for('invoices.invoices_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-receipt"></i> View Invoices
+                    </a>
+                    <a href="{{ url_for('inventory.inventory_list') }}?status=In-Stock" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-seam"></i> Available Inventory
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Key Metrics Row -->
 <div class="row mb-4">
     <!-- Total Sales -->
@@ -97,31 +122,6 @@
                     <div class="text-info" style="font-size: 3rem; opacity: 0.3;">
                         <i class="bi bi-receipt-cutoff"></i>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h5 class="mb-3"><i class="bi bi-lightning"></i> Quick Actions</h5>
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ url_for('invoices.invoice_new') }}" class="btn btn-success">
-                        <i class="bi bi-cart-plus"></i> New Sale
-                    </a>
-                    <a href="{{ url_for('vendors.vendor_new') }}" class="btn btn-info">
-                        <i class="bi bi-person-plus"></i> New Vendor
-                    </a>
-                    <a href="{{ url_for('invoices.invoices_list') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-receipt"></i> View Invoices
-                    </a>
-                    <a href="{{ url_for('inventory.inventory_list') }}?status=In-Stock" class="btn btn-outline-secondary">
-                        <i class="bi bi-box-seam"></i> Available Inventory
-                    </a>
                 </div>
             </div>
         </div>
