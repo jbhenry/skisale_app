@@ -25,6 +25,8 @@
                 </div>
                 {% endif %}
                 
+                {# After a failed save, redisplay what the user typed instead of the stored values #}
+                {% set v = form if form else item %}
                 <form method="POST">
                     <!-- SKU and Vendor -->
                     <div class="row mb-3">
@@ -34,7 +36,7 @@
                             </label>
                             <input type="number" class="form-control" id="sku"
                                    name="sku" required min="1" max="9999999"
-                                   value="{{ item.sku if item else '' }}"
+                                   value="{{ v.sku if v else '' }}"
                                    placeholder="1234567" autofocus>
                             <small class="text-muted">Up to 7-digit number</small>
                         </div>
@@ -46,7 +48,7 @@
                                 <option value="">--Select Vendor--</option>
                                 {% for vendor in vendors %}
                                 <option value="{{ vendor.id }}" 
-                                        {% if item and item.vendor_id == vendor.id %}selected
+                                        {% if v and v.vendor_id == vendor.id %}selected
                                         {% elif preselect_vendor_id and preselect_vendor_id == vendor.id %}selected
                                         {% endif %}>
                                     #{{ vendor.id }} - {{ vendor.full_name }}
@@ -64,12 +66,12 @@
                             </label>
                             <select class="form-select" id="equipment_type" name="equipment_type" required>
                                 <option value="">--Select Type--</option>
-                                {% if item and item.equipment_type and item.equipment_type not in equipment_types %}
-                                <option value="{{ item.equipment_type }}" selected>{{ item.equipment_type }}</option>
+                                {% if v and v.equipment_type and v.equipment_type not in equipment_types %}
+                                <option value="{{ v.equipment_type }}" selected>{{ v.equipment_type }}</option>
                                 {% endif %}
                                 {% for eq_type in equipment_types %}
                                 <option value="{{ eq_type }}"
-                                        {% if item and item.equipment_type == eq_type %}selected{% endif %}>
+                                        {% if v and v.equipment_type == eq_type %}selected{% endif %}>
                                     {{ eq_type }}
                                 </option>
                                 {% endfor %}
@@ -82,7 +84,7 @@
                             <select class="form-select" id="status" name="status" required>
                                 {% for status in statuses %}
                                 <option value="{{ status }}" 
-                                        {% if item and item.status == status %}selected{% elif not item and status == 'In-Stock' %}selected{% endif %}>
+                                        {% if v and v.status == status %}selected{% elif not v and status == 'In-Stock' %}selected{% endif %}>
                                     {{ status }}
                                 </option>
                                 {% endfor %}
@@ -97,7 +99,7 @@
                         </label>
                         <input type="text" class="form-control" id="description"
                                name="description" required maxlength="200"
-                               value="{{ item.description or '' if item else '' }}"
+                               value="{{ v.description or '' if v else '' }}"
                                placeholder="e.g., Rossignol 170cm Skis, Black">
                          <small class="text-muted">Be as descriptive as possible. Include size, color, gender, etc. where applicable.</small>
                     </div>
@@ -111,7 +113,7 @@
                             <span class="input-group-text">$</span>
                             <input type="number" class="form-control" id="price" 
                                    name="price" required step="0.01" min="0"
-                                   value="{{ item.price if item else '' }}"
+                                   value="{{ v.price if v else '' }}"
                                    placeholder="25.00">
                         </div>
                     </div>
@@ -121,7 +123,7 @@
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="donate_if_not_sold"
                                    name="donate_if_not_sold"
-                                   {% if item and item.donate_if_not_sold %}checked{% endif %}>
+                                   {% if v and v.donate_if_not_sold %}checked{% endif %}>
                             <label class="form-check-label" for="donate_if_not_sold">
                                 Donate If Not Sold
                             </label>
@@ -133,7 +135,7 @@
                     <div class="mb-3">
                         <label for="notes" class="form-label">Notes</label>
                         <textarea class="form-control" id="notes" name="notes"
-                                  rows="3" placeholder="Additional notes...">{{ item.notes or '' if item else '' }}</textarea>
+                                  rows="3" placeholder="Additional notes...">{{ v.notes or '' if v else '' }}</textarea>
                     </div>
 
                     <!-- Buttons -->

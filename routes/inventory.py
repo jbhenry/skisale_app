@@ -18,6 +18,20 @@ def require_register_for_writes():
             return redirect(request.referrer or url_for('inventory.inventory_list'))
 
 
+def _submitted_values():
+    """Form values as typed, for redisplaying the form after a failed save"""
+    return {
+        'sku': request.form.get('sku', ''),
+        'vendor_id': request.form.get('vendor_id', type=int),
+        'equipment_type': request.form.get('equipment_type', ''),
+        'description': request.form.get('description', ''),
+        'price': request.form.get('price', ''),
+        'status': request.form.get('status', ''),
+        'donate_if_not_sold': request.form.get('donate_if_not_sold') == 'on',
+        'notes': request.form.get('notes', ''),
+    }
+
+
 @inventory_bp.route('/inventory')
 def inventory_list():
     """Display all inventory items"""
@@ -90,14 +104,19 @@ def inventory_list():
 @inventory_bp.route('/inventory/new', methods=['GET', 'POST'])
 def inventory_new():
     """Create new inventory item"""
+    form = None
     if request.method == 'POST':
         try:
             description = request.form.get('description', '').strip()
             if not description:
                 raise ValueError('Description is required')
 
+            sku = int(request.form['sku'])
+            if Inventory.query.filter_by(sku=sku).first():
+                raise ValueError(f'SKU {sku} already exists')
+
             item = Inventory(
-                sku=int(request.form['sku']),
+                sku=sku,
                 vendor_id=int(request.form['vendor_id']),
                 equipment_type=request.form['equipment_type'],
                 description=description,
@@ -119,6 +138,7 @@ def inventory_new():
         except Exception as e:
             db.session.rollback()
             flash(f'Error creating inventory item: {str(e)}', 'error')
+            form = _submitted_values()
 
     # Get vendor_id from URL parameter if present
     preselect_vendor_id = request.args.get('vendor_id', type=int)
@@ -130,7 +150,8 @@ def inventory_new():
                          vendors=vendors,
                          equipment_types=EQUIPMENT_TYPES,
                          statuses=INVENTORY_STATUSES,
-                         preselect_vendor_id=preselect_vendor_id)
+                         preselect_vendor_id=preselect_vendor_id,
+                         form=form)
 
 
 @inventory_bp.route('/inventory/<int:item_id>/edit', methods=['GET', 'POST'])
@@ -138,13 +159,18 @@ def inventory_edit(item_id):
     """Edit existing inventory item"""
     item = db.get_or_404(Inventory, item_id)
 
+    form = None
     if request.method == 'POST':
         try:
             description = request.form.get('description', '').strip()
             if not description:
                 raise ValueError('Description is required')
 
-            item.sku = int(request.form['sku'])
+            sku = int(request.form['sku'])
+            if Inventory.query.filter(Inventory.sku == sku, Inventory.id != item.id).first():
+                raise ValueError(f'SKU {sku} already exists')
+
+            item.sku = sku
             item.vendor_id = int(request.form['vendor_id'])
             item.equipment_type = request.form['equipment_type']
             item.description = description
@@ -162,6 +188,7 @@ def inventory_edit(item_id):
         except Exception as e:
             db.session.rollback()
             flash(f'Error updating inventory item: {str(e)}', 'error')
+            form = _submitted_values()
 
     vendors = Vendor.query.filter_by(active=True).order_by(Vendor.last_name, Vendor.first_name).all()
     return render_template('inventory_form.html',
@@ -169,7 +196,8 @@ def inventory_edit(item_id):
                          action='Edit',
                          vendors=vendors,
                          equipment_types=EQUIPMENT_TYPES,
-                         statuses=INVENTORY_STATUSES)
+                         statuses=INVENTORY_STATUSES,
+                         form=form)
 
 
 @inventory_bp.route('/inventory/<int:item_id>/delete', methods=['POST'])
