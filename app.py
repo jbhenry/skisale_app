@@ -1,9 +1,11 @@
 """
 SkiSale Flask Application
 """
+import re
 from datetime import timezone
 
 from flask import Flask
+from markupsafe import Markup, escape
 from sqlalchemy import text
 
 from models import db
@@ -24,6 +26,14 @@ def to_eastern(dt):
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(EASTERN)
+
+@app.template_filter('bold_markup')
+def bold_markup(value):
+    """Escape text, then render **text** as <strong>text</strong>."""
+    if not value:
+        return value
+    escaped = str(escape(value))
+    return Markup(re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', escaped))
 
 # Register blueprints
 from routes.vendors import vendors_bp

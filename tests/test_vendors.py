@@ -206,6 +206,16 @@ class TestVendorReceipt:
         response = client.get(f'/vendors/{sample_vendor.id}/receipt')
         assert b'WINTER SPORTS EQUIPMENT SALE' in response.data
 
+    def test_receipt_disclaimer_bold_markup(self, client, sample_vendor):
+        html = client.get(f'/vendors/{sample_vendor.id}/receipt').data.decode()
+        assert '<strong>CHARGES:</strong>' in html
+        assert '**' not in html
+
+    def test_bold_markup_filter_escapes_html(self):
+        from app import bold_markup
+        assert bold_markup('<b>x</b> **y**') == '&lt;b&gt;x&lt;/b&gt; <strong>y</strong>'
+        assert bold_markup('no markers') == 'no markers'
+
     def test_receipt_signatures_between_payout_and_disclaimer(self, client, sample_item):
         html = client.get(f'/vendors/{sample_item.vendor_id}/receipt').data.decode()
         payout = html.index('Potential Payout')

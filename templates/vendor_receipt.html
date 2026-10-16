@@ -152,6 +152,7 @@
             color: #555;
             white-space: pre-wrap;
         }
+        .disclaimer strong { color: #000; }
 
         /* ---- Empty state ---- */
         .empty {
@@ -272,7 +273,7 @@
 
     <!-- Disclaimer -->
     {% if disclaimer %}
-    <div class="disclaimer">{{ disclaimer }}</div>
+    <div class="disclaimer">{{ disclaimer|bold_markup }}</div>
     {% endif %}
 
 </body>
