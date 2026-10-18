@@ -1,6 +1,8 @@
 # TODO list for skisale_app
 
 ## Code
+Open code changes are tracked in GitHub Issues: https://github.com/jbhenry/skisale_app/issues
+
 - **DONE** Check layout (bottom stub): vendor name/address calibrated to actual #10 window envelope.
 - **DONE** Add register ID or employee ID to each invoice.   
     - Remember (cookie?) after initial entry
