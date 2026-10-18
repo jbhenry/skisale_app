@@ -102,3 +102,11 @@ ORG_ADDR1 = '4141 Bauer Road'
 ORG_ADDR2 = 'Brighton, MI 48116'
 CHECK_NUMBER_START = 1001  # First check number in the run
 CHECK_FEE = 1.00  # Check processing/mailing fee deducted from each vendor check
+
+# Note printed on the right side of the bottom check stub (clear of the
+# envelope window). Wraps automatically; blank lines are kept. Empty = no note.
+CHECK_STUB_NOTE = """Thank you for supporting the Mt. Brighton Ski Patrol 2026 Ski Swap! Your involvement helps fund our safety and educational programs both on the slopes and in the community.
+
+Enclosed are the sales proceeds for the items you contributed, minus applicable commissions and fees. Please ensure this check is deposited by December 31, 2026. If you do not plan to cash or deposit this check, kindly notify our Treasurer at nmwhite88@gmail.com.
+
+Thank you again for your support!"""
