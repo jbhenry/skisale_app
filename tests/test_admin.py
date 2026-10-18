@@ -325,6 +325,18 @@ class TestDonatedReport:
 # Print Checks PDF  (/admin/print-checks)
 # ---------------------------------------------------------------------------
 
+def _pdf_text(pdf_bytes):
+    """Decode ReportLab's ASCII85 + Flate page streams so drawn text is searchable."""
+    import base64, re, zlib
+    out = b''
+    for stream in re.findall(rb'stream\r?\n(.*?)endstream', pdf_bytes, re.S):
+        try:
+            out += zlib.decompress(base64.a85decode(stream.strip().removesuffix(b'~>')))
+        except Exception:
+            pass  # not an ASCII85 + Flate stream
+    return out
+
+
 class TestPrintChecks:
 
     def test_returns_pdf(self, client, full_db):
@@ -353,6 +365,20 @@ class TestPrintChecks:
         response = client.get('/admin/print-checks')
         assert response.status_code == 200
         assert response.data[:4] == b'%PDF'
+
+    def test_stub_note_printed(self, client, full_db, monkeypatch):
+        monkeypatch.setattr('routes.admin.CHECK_STUB_NOTE', 'Stub note line one\n\nLine three')
+        data = _pdf_text(client.get('/admin/print-checks').data)
+        assert b'Stub note line one' in data
+        assert b'Line three' in data
+
+    def test_stub_note_blank_omitted(self, client, full_db, monkeypatch):
+        monkeypatch.setattr('routes.admin.CHECK_STUB_NOTE', 'Unique marker text')
+        assert b'Unique marker text' in _pdf_text(client.get('/admin/print-checks').data)
+        monkeypatch.setattr('routes.admin.CHECK_STUB_NOTE', '   ')
+        response = client.get('/admin/print-checks')
+        assert response.status_code == 200
+        assert b'Unique marker text' not in _pdf_text(response.data)
 
 
 class TestCheckFee:

@@ -16,11 +16,12 @@ from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.lib.pagesizes import letter as rl_letter
 from reportlab.lib.units import inch
 from reportlab.lib import colors as rl_colors
+from reportlab.lib.utils import simpleSplit
 
 from flask import Blueprint, render_template, redirect, url_for, flash, Response, send_file, request
 
 from models import db, Vendor, Inventory, Invoice, InvoiceLine, InvoiceReturn, check_fee
-from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START, EASTERN
+from constants import ORG_NAME, ORG_ADDR1, ORG_ADDR2, CHECK_NUMBER_START, EASTERN, CHECK_STUB_NOTE
 from routes.vendors import compute_swap_metrics
 
 admin_bp = Blueprint('admin', __name__)
@@ -1060,6 +1061,10 @@ def admin_print_checks():
     # bottom of the envelope. See Prompt_Log.md for the derivation.
     STUB_ADDR_RIGHT = -0.03 * inch
     STUB_ADDR_DOWN  = 1.708 * inch
+    # Window spans 0.375"-4.875" across the page, so the note starts at 5.125"
+    NOTE_LEFT   = 5.125 * inch
+    NOTE_FONT   = 9
+    NOTE_LEAD   = 11
 
     def draw_bottom_stub(c, top_y, data):
         # Address block — indented
@@ -1075,6 +1080,16 @@ def admin_print_checks():
         # Long date — top right, clear of the window (which starts ~2" down from top_y)
         c.setFont('Helvetica', 10)
         c.drawRightString(R, top_y - 24, date.today().strftime('%A, %B %-d, %Y'))
+
+        # Configurable note — right side, below the date, clear of the window
+        if CHECK_STUB_NOTE.strip():
+            lines = []
+            for para in CHECK_STUB_NOTE.strip().split('\n'):
+                lines.extend(simpleSplit(para, 'Helvetica', NOTE_FONT, R - NOTE_LEFT) or [''])
+            max_lines = int((top_y - 48 - MARGIN) / NOTE_LEAD) + 1
+            c.setFont('Helvetica', NOTE_FONT)
+            for i, line in enumerate(lines[:max_lines]):
+                c.drawString(NOTE_LEFT, top_y - 48 - i * NOTE_LEAD, line)
 
     # ── Build PDF ─────────────────────────────────────────────────────────────
     buf = io.BytesIO()
