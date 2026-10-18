@@ -1060,7 +1060,7 @@ def admin_print_checks():
     # third, 8.5" x 3.667") sits centered horizontally and flush against the
     # bottom of the envelope. See Prompt_Log.md for the derivation.
     STUB_ADDR_RIGHT = -0.03 * inch
-    STUB_ADDR_DOWN  = 1.708 * inch
+    STUB_ADDR_DOWN  = 1.458 * inch
     # Window spans 0.375"-4.875" across the page, so the note starts at 5.125"
     NOTE_LEFT   = 5.125 * inch
     NOTE_FONT   = 9
